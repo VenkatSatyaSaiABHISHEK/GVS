@@ -1,13 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import { 
   Search, 
   Bell, 
   MessageSquare, 
   User,
   Users,
+  BookOpen,
   Calendar,
   Star,
   MapPin,
+  Video,
+  Heart,
   ChevronRight,
   Home,
   Sparkles,
@@ -15,12 +18,9 @@ import {
   ClipboardList,
   CreditCard,
   Settings,
-  LogOut,
-  ChevronDown
+  Menu
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 // Mock data matching the reference design
 const statsData = [
@@ -79,24 +79,19 @@ const recommendedTeachers = [
   }
 ];
 
+const upcomingClasses = [
+  { teacher: "Rahul Sharma", subject: "Physics", date: "Dec 15", time: "10:00 AM", mode: "Online", status: "Scheduled" },
+  { teacher: "Priya Singh", subject: "Math", date: "Dec 16", time: "2:00 PM", mode: "Offline", status: "Confirmed" },
+  { teacher: "Amit Kumar", subject: "Chemistry", date: "Dec 17", time: "4:00 PM", mode: "Online", status: "Pending" },
+];
+
+const recentMessages = [
+  { teacher: "Rahul Sharma", message: "Demo class available tomorrow", time: "2 min ago", unread: true },
+  { teacher: "Priya Singh", message: "Assignment completed successfully", time: "1 hour ago", unread: false },
+  { teacher: "Amit Kumar", message: "Next class rescheduled", time: "3 hours ago", unread: true },
+];
+
 const ParentDashboard = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-
-  const handleProfileClick = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
-
-  const handleLogout = () => {
-    logout.mutate();
-  };
-
-  const handleProfileSettings = () => {
-    navigate("/dashboard/settings");
-    setShowProfileDropdown(false);
-  };
-
   return (
     <div className="min-h-screen bg-[#F5F6FA] font-inter">
       <div className="flex">
@@ -148,10 +143,11 @@ const ParentDashboard = () => {
 
         {/* Main Content Area */}
         <div className="ml-[260px] flex-1">
-          {/* Top Navbar */}
+          {/* Top Navbar - Exact match to reference */}
           <div className="h-[70px] bg-white border-b border-[#E5E7EB] px-6 flex items-center justify-between">
             {/* Left side */}
             <div className="flex items-center space-x-4">
+              <Menu className="h-5 w-5 text-[#6B7280]" />
               <h1 className="text-2xl font-bold text-[#111827]">Dashboard</h1>
             </div>
             
@@ -179,52 +175,14 @@ const ParentDashboard = () => {
                 <span className="absolute -top-1 -right-1 bg-[#5B3DF5] text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
               </button>
               
-              {/* Profile Dropdown */}
-              <div className="relative">
-                <button 
-                  onClick={handleProfileClick}
-                  className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
-                >
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-[#111827]">{user?.fullName || "Abhi Parent"}</p>
-                    <p className="text-xs text-[#6B7280]">Parent Account</p>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    {user?.profilePic ? (
-                      <img 
-                        src={user.profilePic} 
-                        alt="Profile" 
-                        className="h-10 w-10 rounded-full object-cover border-2 border-[#5B3DF5]"
-                      />
-                    ) : (
-                      <div className="h-10 w-10 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-white" />
-                      </div>
-                    )}
-                    <ChevronDown className="h-4 w-4 text-[#6B7280]" />
-                  </div>
-                </button>
-
-                {/* Profile Dropdown Menu */}
-                {showProfileDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-[#E5E7EB] py-2 z-50">
-                    <button
-                      onClick={handleProfileSettings}
-                      className="w-full flex items-center px-4 py-2 text-sm text-[#111827] hover:bg-gray-50 transition-colors"
-                    >
-                      <Settings className="h-4 w-4 mr-3" />
-                      Profile Settings
-                    </button>
-                    <hr className="my-1 border-[#E5E7EB]" />
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4 mr-3" />
-                      Logout
-                    </button>
-                  </div>
-                )}
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-[#111827]">Abhi Parent</p>
+                  <p className="text-xs text-[#6B7280]">Parent Account</p>
+                </div>
+                <div className="h-10 w-10 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
+                </div>
               </div>
             </div>
           </div>
@@ -252,18 +210,10 @@ const ParentDashboard = () => {
                 {/* Profile Card */}
                 <div className="bg-white rounded-2xl p-6 shadow-[0px_8px_24px_rgba(0,0,0,0.06)]">
                   <div className="text-center">
-                    {user?.profilePic ? (
-                      <img 
-                        src={user.profilePic} 
-                        alt="Profile" 
-                        className="w-20 h-20 rounded-full mx-auto mb-4 object-cover border-4 border-[#5B3DF5]"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <User className="h-10 w-10 text-white" />
-                      </div>
-                    )}
-                    <h3 className="text-lg font-semibold text-[#111827] mb-1">{user?.fullName || "Abhi Parent"}</h3>
+                    <div className="w-20 h-20 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <User className="h-10 w-10 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-[#111827] mb-1">Abhi Parent</h3>
                     <p className="text-sm text-[#6B7280] mb-4">Parent Account</p>
                     
                     {/* Progress indicators */}

@@ -28,7 +28,6 @@ const Sidebars = () => {
       return null;
     } else if (
       pathname.startsWith("/dashboard/school") ||
-      pathname.startsWith("/dashboard/parent") ||
       pathname.startsWith("/dashboard/admin") ||
       pathname.startsWith("/dashboard/settings")
     ) {

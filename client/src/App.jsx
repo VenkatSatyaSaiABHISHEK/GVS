@@ -81,7 +81,7 @@ function App() {
       </div>
     );
 
-  const showNavbar = !["/", "/login", "/register"].includes(location.pathname) && !location.pathname.startsWith("/dashboard/teacher");
+  const showNavbar = !["/", "/login", "/register"].includes(location.pathname) && !location.pathname.startsWith("/dashboard/teacher") && !location.pathname.startsWith("/dashboard/parent");
 
   return (
     <>
@@ -154,13 +154,19 @@ function App() {
             path="parent"
             element={
               <RoleBasedRoute allowedRole="parent">
-                <Dashboard />
+                <ParentDashboard />
               </RoleBasedRoute>
             }
-          >
-            <Route index element={<ParentDashboard />} />
-            <Route path="find-tutor" element={<TutorListings />} />
-          </Route>
+          />
+
+          <Route
+            path="parent/find-tutor"
+            element={
+              <RoleBasedRoute allowedRole="parent">
+                <TutorListings />
+              </RoleBasedRoute>
+            }
+          />
 
           <Route
             path="admin"
