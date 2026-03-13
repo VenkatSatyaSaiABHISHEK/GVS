@@ -9,7 +9,7 @@ const Projects = ({ projects, onDelete, onUpdate, onAdd }) => {
     <div className="flex flex-col justify-center">
       {projects?.map((project) => (
         <div
-          key={project._id}
+          key={project.id}
           className="mb-2 bg-muted shadow-2xl border hover:bg-muted/50 py-4"
         >
           <div className="grid grid-cols-2">
@@ -35,7 +35,7 @@ const Projects = ({ projects, onDelete, onUpdate, onAdd }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onDelete(project._id)}
+                onClick={() => onDelete(project.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -55,7 +55,7 @@ const Projects = ({ projects, onDelete, onUpdate, onAdd }) => {
 Projects.propTypes = {
   projects: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       title: PropTypes.string.isRequired,
       skills: PropTypes.arrayOf(PropTypes.string).isRequired,
       endDate: PropTypes.string,

@@ -35,14 +35,13 @@ const ProfileLayout = ({ children }) => {
   const { mutate: logoutUser } = logout;
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: `/dashboard/${user?.role}` },
-    { icon: Search, label: 'Find Teachers', path: '/teachers' },
-    { icon: FileText, label: 'Job Posts', path: '/jobs' },
-    { icon: FileText, label: 'Applications', path: '/applications' },
-    { icon: MessageSquare, label: 'Messages', path: '/messages' },
-    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
-    { icon: User, label: 'Profile', path: '/profile', active: true },
-    { icon: Settings, label: 'Settings', path: '/settings' },
+    { icon: Home, label: 'Dashboard', path: `/dashboard/${{ jobSeeker: 'teacher', recruiter: 'school', teacher: 'teacher', school: 'school', parent: 'parent', admin: 'admin' }[user?.role] || user?.role}` },
+    { icon: Search, label: 'Find Jobs', path: '/dashboard/teacher/jobs' },
+    { icon: FileText, label: 'Applications', path: '/dashboard/teacher/applied-jobs' },
+    { icon: MessageSquare, label: 'Messages', path: '/dashboard/teacher/messages' },
+    { icon: BarChart3, label: 'Analytics', path: '/dashboard/teacher/analytics' },
+    { icon: User, label: 'Profile', path: '/dashboard/teacher/profile', active: true },
+    { icon: Settings, label: 'Settings', path: '/dashboard/teacher/settings' },
   ];
 
   const isActive = (path) => location.pathname === path || (path === '/profile' && location.pathname.includes('profile'));

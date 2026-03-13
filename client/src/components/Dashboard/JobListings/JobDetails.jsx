@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 const JobDetails = ({ job, isBookmarked }) => {
   const {
-    _id: jobId,
+    id: jobId,
     title,
     description,
     location,
@@ -126,7 +126,7 @@ const JobDetails = ({ job, isBookmarked }) => {
 
         {/*  <DrawerFooter>
           <Button
-            onClick={() => handleApplyForJob(_id)}
+            onClick={() => handleApplyForJob(jobId)}
             className={`rounded-md px-8 py-2 font-semibold border border-black`}
           >
             (Apply)
@@ -148,11 +148,11 @@ const JobDetails = ({ job, isBookmarked }) => {
 JobDetails.propTypes = {
   isBookmarked: PropTypes.bool.isRequired,
   job: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
+    id: PropTypes.string.isRequired,
     company: PropTypes.shape({
       name: PropTypes.string.isRequired,
       logo: PropTypes.string.isRequired,
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
     }).isRequired,
     title: PropTypes.string.isRequired,
     description: PropTypes.string.isRequired,

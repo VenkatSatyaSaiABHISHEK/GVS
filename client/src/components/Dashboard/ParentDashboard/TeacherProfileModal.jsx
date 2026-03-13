@@ -85,7 +85,7 @@ const TeacherProfileModal = ({ teacher, onClose, user }) => {
     const handleSendRequest = () => {
         if (!message.trim()) { toast.error("Please enter a message"); return; }
         requestMutation.mutate({
-            teacherId: teacher._id,
+            teacherId: teacher.id,
             subject: (teacher.subjects || [])[0] || "General",
             message,
             preferredMode: "both",

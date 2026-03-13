@@ -224,7 +224,7 @@ const JobPosts = () => {
             ) : (
               <div className="space-y-4">
                 {filteredJobs.map(job => (
-                  <div key={job._id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-all">
+                  <div key={job.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
@@ -290,30 +290,30 @@ const JobPosts = () => {
                         
                         <div className="relative">
                           <button
-                            onClick={() => setShowDropdown(showDropdown === job._id ? null : job._id)}
+                            onClick={() => setShowDropdown(showDropdown === job.id ? null : job.id)}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-400" />
                           </button>
                           
-                          {showDropdown === job._id && (
+                          {showDropdown === job.id && (
                             <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-10">
                               <button
-                                onClick={() => handleAction('view', job._id)}
+                                onClick={() => handleAction('view', job.id)}
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                               >
                                 <Eye className="w-4 h-4" />
                                 <span>View Details</span>
                               </button>
                               <button
-                                onClick={() => handleAction('edit', job._id)}
+                                onClick={() => handleAction('edit', job.id)}
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                               >
                                 <Edit className="w-4 h-4" />
                                 <span>Edit Job</span>
                               </button>
                               <button
-                                onClick={() => handleAction('applications', job._id)}
+                                onClick={() => handleAction('applications', job.id)}
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
                               >
                                 <Users className="w-4 h-4" />
@@ -321,7 +321,7 @@ const JobPosts = () => {
                               </button>
                               <hr className="my-2" />
                               <button
-                                onClick={() => handleAction('delete', job._id)}
+                                onClick={() => handleAction('delete', job.id)}
                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -337,13 +337,13 @@ const JobPosts = () => {
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                       <div className="flex space-x-3">
                         <button 
-                          onClick={() => handleAction('applications', job._id)}
+                          onClick={() => handleAction('applications', job.id)}
                           className="px-4 py-2 bg-[#6C5CE7] text-white rounded-lg hover:bg-[#5A4FCF] transition-colors text-sm font-medium"
                         >
                           View Applications ({job.applicants?.length || 0})
                         </button>
                         <button 
-                          onClick={() => handleAction('edit', job._id)}
+                          onClick={() => handleAction('edit', job.id)}
                           className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
                         >
                           Edit Job

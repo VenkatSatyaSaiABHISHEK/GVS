@@ -38,7 +38,7 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const response = await axiosInstance.get('/api/admin/dashboard/stats');
+      const response = await axiosInstance.get('/admin/dashboard/stats');
       if (response.data.success) {
         setStats(response.data.data);
       }

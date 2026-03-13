@@ -31,7 +31,7 @@ const AdminApplications = () => {
 
   const fetchApplications = async () => {
     try {
-      const response = await axiosInstance.get('/api/applications');
+      const response = await axiosInstance.get('/applications');
       if (response.data.success) {
         setApplications(response.data.data || []);
       }

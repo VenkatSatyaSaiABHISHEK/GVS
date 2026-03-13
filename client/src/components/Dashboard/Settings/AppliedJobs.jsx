@@ -42,8 +42,12 @@ export default function AppliedJobs() {
     const statusLower = status?.toLowerCase();
     const styles = {
       applied: "bg-yellow-100 text-yellow-700",
-      reviewing: "bg-blue-100 text-blue-700",
-      interview: "bg-purple-100 text-purple-700",
+      application_viewed: "bg-blue-100 text-blue-700",
+      shortlisted: "bg-indigo-100 text-indigo-700",
+      interview_scheduled: "bg-purple-100 text-purple-700",
+      interview_completed: "bg-fuchsia-100 text-fuchsia-700",
+      selected: "bg-cyan-100 text-cyan-700",
+      offer_sent: "bg-orange-100 text-orange-700",
       hired: "bg-green-100 text-green-700",
       rejected: "bg-red-100 text-red-700",
     };
@@ -98,24 +102,34 @@ export default function AppliedJobs() {
               Applied
             </button>
             <button
-              onClick={() => setStatusFilter("reviewing")}
+              onClick={() => setStatusFilter("shortlisted")}
               className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                statusFilter === "reviewing"
+                statusFilter === "shortlisted"
                   ? "bg-[#6C5DD3] text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
-              Reviewing
+              Shortlisted
             </button>
             <button
-              onClick={() => setStatusFilter("interview")}
+              onClick={() => setStatusFilter("interview_scheduled")}
               className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                statusFilter === "interview"
+                statusFilter === "interview_scheduled"
                   ? "bg-[#6C5DD3] text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               Interview
+            </button>
+            <button
+              onClick={() => setStatusFilter("offer_sent")}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
+                statusFilter === "offer_sent"
+                  ? "bg-[#6C5DD3] text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Offer
             </button>
             <button
               onClick={() => setStatusFilter("hired")}
@@ -189,7 +203,7 @@ export default function AppliedJobs() {
                     const job = application?.job;
                     
                     return (
-                      <tr key={application._id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={application.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <input type="checkbox" className="w-4 h-4 rounded accent-[#6C5DD3]" />
                         </td>
@@ -235,7 +249,7 @@ export default function AppliedJobs() {
                         </td>
                         <td className="px-6 py-4">
                           <button 
-                            onClick={() => window.location.href = `/dashboard/teacher/jobs/${job?._id}`}
+                            onClick={() => window.location.href = `/dashboard/teacher/jobs/${job?.id}`}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-600" />

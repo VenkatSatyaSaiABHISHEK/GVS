@@ -47,8 +47,11 @@ import LandingPage from "./pages/LandingPage";
 
 // Profile Components
 import ProfilePage from "./pages/ProfilePage";
-import SchoolProfilePage from "./pages/SchoolProfilePage";
+import SchoolProfilePage from "./pages/SchoolProfilePageNew";
 import TeacherProfileView from "./pages/TeacherProfileView";
+import TeacherProfilePage from "./pages/TeacherProfilePage";
+import ParentProfilePage from "./pages/ParentProfilePage";
+import AdminProfilePage from "./pages/admin/AdminProfilePage";
 
 // School Dashboard Components
 import SchoolDashboard from "@/pages/SchoolDashboard";
@@ -100,11 +103,37 @@ import TeacherProfile from "@/components/Dashboard/Profile/TeacherProfile";
 
 import CompleteProfilePage from "./pages/CompleteProfilePage";
 import ProfileCompletionRoute from "./ProtectedRoutes/ProfileCompletionRoute";
+import { useAuth } from "./hooks/useAuth";
+import ProtectedRoute from "./ProtectedRoutes/ProtectedRoute";
+import RoleBasedRoute from "./ProtectedRoutes/RoleBasedRoute";
+
+/** Redirects old /dashboard/settings to the correct role-specific profile page */
+const ProfileRedirect = () => {
+  const { user } = useAuth();
+  const roleMap = {
+    teacher: "/dashboard/teacher/profile",
+    jobSeeker: "/dashboard/teacher/profile",
+    school: "/dashboard/school/profile",
+    recruiter: "/dashboard/school/profile",
+    parent: "/dashboard/parent/profile-settings",
+  };
+  return <Navigate to={roleMap[user?.role] || "/dashboard"} replace />;
+};
 
 function App() {
   const navigate = useNavigate();
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+
+  // Map backend roles to frontend route segments
+  const roleToRoute = {
+    jobSeeker: "teacher",
+    recruiter: "school",
+    teacher: "teacher",
+    school: "school",
+    parent: "parent",
+    admin: "admin",
+  };
 
   useEffect(() => {
     if (isLoading) return;
@@ -113,23 +142,25 @@ function App() {
     const isGuestPath = guestPaths.includes(location.pathname);
 
     if (isAuthenticated && user?.role && isGuestPath) {
-      console.log(`Redirecting authenticated user with role ${user.role} to /dashboard/${user.role}`);
-      navigate(`/dashboard/${user.role}`, { replace: true });
+      const route = roleToRoute[user.role] || user.role;
+      console.log(`Redirecting authenticated user with role ${user.role} to /dashboard/${route}`);
+      navigate(`/dashboard/${route}`, { replace: true });
     }
   }, [isAuthenticated, user?.role, navigate, location.pathname, isLoading]);
 
-  if (isLoading)
+  // Debug log
+  console.log("App render:", { isLoading, isAuthenticated, hasUser: !!user, path: location.pathname });
+
+  if (isLoading) {
     return (
-      <div className="max-h-screen h-screen w-screen">
-        <div className="w-full h-full bg-black/10 flex flex-col gap-5 items-center justify-center">
-          <RefreshCw className="animate-spin h-14 w-14 stroke-primary/60" />
-          <p className="text-primary/70 text-center font-semibold underline">
-            Loading... Please be patient, the backend server is starting up and
-            may take a minute.
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <RefreshCw className="animate-spin h-12 w-12 mx-auto text-blue-600 mb-4" />
+          <p className="text-gray-600">Loading... Please wait.</p>
         </div>
       </div>
     );
+  }
 
   const showNavbar = !["/", "/login", "/register"].includes(location.pathname) && 
     !location.pathname.startsWith("/dashboard/teacher") && 
@@ -307,13 +338,7 @@ function App() {
 
         <Route
           path="/dashboard/school/settings"
-          element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <RoleBasedRoute allowedRole="school">
-                <Settings />
-              </RoleBasedRoute>
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/dashboard/school/profile" replace />}
         />
 
         <Route
@@ -328,7 +353,7 @@ function App() {
             index
             element={
               user?.role ? (
-                <Navigate to={`/dashboard/${user.role}`} replace />
+                <Navigate to={`/dashboard/${roleToRoute[user.role] || user.role}`} replace />
               ) : (
                 <div className="flex items-center justify-center min-h-screen">
                   <RefreshCw className="animate-spin h-10 w-10 stroke-primary" />
@@ -348,11 +373,8 @@ function App() {
             <Route index element={<AdminDashboardComponent />} />
           </Route>
 
-          <Route path="settings" element={<Settings />}>
-            <Route index element={<Profile />} />
-            <Route path="bookmarks" element={<Bookmarks />} />
-            <Route path="applied-jobs" element={<AppliedJobs />} />
-          </Route>
+          <Route path="settings" element={<ProfileRedirect />} />
+          <Route path="settings/*" element={<ProfileRedirect />} />
         </Route>
 
         {/* Teacher Dashboard Routes */}
@@ -517,7 +539,7 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <RoleBasedRoute allowedRole="teacher">
-                <TeacherProfile />
+                <TeacherProfilePage />
               </RoleBasedRoute>
             </ProtectedRoute>
           }
@@ -528,7 +550,7 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <RoleBasedRoute allowedRole="teacher">
-                <TeacherProfile />
+                <TeacherProfilePage />
               </RoleBasedRoute>
             </ProtectedRoute>
           }
@@ -641,7 +663,7 @@ function App() {
           element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <RoleBasedRoute allowedRole="parent">
-                <ProfileSettings />
+                <ParentProfilePage />
               </RoleBasedRoute>
             </ProtectedRoute>
           }
@@ -673,7 +695,6 @@ function App() {
             </div>
           </div>
         } />
-        <Route path="*" element={<Navigate to="/" replace />} />
         <Route path="/test" element={<TestPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         
@@ -697,9 +718,13 @@ function App() {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="profile" element={<AdminProfilePage />} />
         </Route>
         
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
+
+        {/* Catch-all - must be last */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster
         icons={{

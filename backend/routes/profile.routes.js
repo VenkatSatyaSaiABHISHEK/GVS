@@ -5,7 +5,8 @@ import {
   completeProfile,
   getProfile,
   updateProfile,
-  getRequiredFields
+  getRequiredFields,
+  getProfileStrength
 } from '../controllers/profileCompletion.controller.js';
 
 const router = express.Router();
@@ -21,6 +22,9 @@ router.get('/', getProfile);
 
 // Get required fields for user's role
 router.get('/required-fields', getRequiredFields);
+
+// Get profile strength meter data
+router.get('/strength', getProfileStrength);
 
 // Complete profile (first time)
 router.put('/complete', completeProfile);

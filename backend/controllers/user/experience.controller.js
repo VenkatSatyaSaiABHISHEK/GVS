@@ -1,113 +1,83 @@
-import { Experience, User } from "../../models/User.js";
+import prisma from "../../db/db.js";
 
 export const getExperiences = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate("experience");
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-    }
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Experiences fetched successfully",
-        experiences: user.experience,
-      });
+    const experiences = await prisma.experience.findMany({
+      where: { userId: req.user.id },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Experiences fetched successfully",
+      experiences,
+    });
   } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to get experiences" });
+    res.status(500).json({ success: false, message: "Failed to get experiences" });
   }
 };
 
 export const addExperience = async (req, res) => {
-  const experienceData = req.body;
-  console.log("userExperience", req.body);
-  console.log("is it even receiving the job title?", experienceData);
   try {
-    // Create a new experience
-    const newExperience = new Experience(experienceData);
-    await newExperience.save();
+    const data = { ...req.body, userId: req.user.id };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
 
-    // Add experience reference to the user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { experience: newExperience._id } },
-      { new: true }
-    ).populate("experience");
+    await prisma.experience.create({ data });
 
-    res
-      .status(201)
-      .json({
-        success: true,
-        message: "Experience added successfully",
-        experiences: user.experience,
-      });
+    const experiences = await prisma.experience.findMany({
+      where: { userId: req.user.id },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Experience added successfully",
+      experiences,
+    });
   } catch (error) {
     console.log(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to add experience" });
+    res.status(500).json({ success: false, message: "Failed to add experience" });
   }
 };
 
 export const updateExperience = async (req, res) => {
-  const { experienceId } = req.params;
-  const updatedData = req.body;
-
+  const experienceId = req.params.experienceId || req.params.expId;
   try {
-    const updatedExperience = await Experience.findByIdAndUpdate(
-      experienceId,
-      { $set: updatedData },
-      { new: true }
-    );
+    const data = { ...req.body };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
 
-    if (!updatedExperience) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Experience not found" });
-    }
+    const updated = await prisma.experience.update({
+      where: { id: experienceId },
+      data,
+    });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Experience updated successfully",
-        experience: updatedExperience,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Experience updated successfully",
+      experience: updated,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update experience" });
+    if (error.code === "P2025") {
+      return res.status(404).json({ success: false, message: "Experience not found" });
+    }
+    res.status(500).json({ success: false, message: "Failed to update experience" });
   }
 };
 
 export const removeExperience = async (req, res) => {
-  const { experienceId } = req.params;
-
+  const experienceId = req.params.experienceId || req.params.expId;
   try {
-    await Experience.findByIdAndDelete(experienceId);
+    await prisma.experience.delete({ where: { id: experienceId } });
 
-    // Remove experience reference from user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $pull: { experience: experienceId } },
-      { new: true }
-    );
+    const experiences = await prisma.experience.findMany({
+      where: { userId: req.user.id },
+    });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Experience removed successfully",
-        experiences: user.experience,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Experience removed successfully",
+      experiences,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to remove experience" });
+    res.status(500).json({ success: false, message: "Failed to remove experience" });
   }
 };

@@ -51,18 +51,25 @@ const TeacherJobApplication = () => {
       setLoading(true);
       const response = await axiosInstance.get(`/jobs/${jobId}/job-data`);
       
-      if (response.data.success) {
-        setJob(response.data.job);
-        
-        // Check if already applied
-        if (response.data.alreadyApplied) {
-          alert('You have already applied for this job');
+      // getJobById returns job data at top level (not wrapped in .job)
+      const jobData = response.data.job || response.data;
+      if (jobData && jobData.id) {
+        setJob(jobData);
+      }
+
+      // Check if already applied
+      try {
+        const checkRes = await axiosInstance.get(`/applications/jobs/${jobId}/check`);
+        if (checkRes.data.hasApplied) {
+          toast.error('You have already applied for this job');
           navigate(`/dashboard/teacher/jobs/${jobId}`);
         }
+      } catch (e) {
+        // ignore check error
       }
     } catch (error) {
       console.error('Error fetching job details:', error);
-      alert('Failed to load job details');
+      toast.error('Failed to load job details');
       navigate('/dashboard/teacher/jobs');
     } finally {
       setLoading(false);
@@ -132,8 +139,13 @@ const TeacherJobApplication = () => {
     try {
       setSubmitting(true);
 
-      // Submit application
-      const response = await axiosInstance.post(`/applications/jobs/${jobId}/apply`);
+      // Submit application with form data
+      const response = await axiosInstance.post(`/applications/jobs/${jobId}/apply`, {
+        coverLetter: formData.aboutYou,
+        aboutYou: formData.aboutYou,
+        expectedSalary: formData.expectedSalary,
+        availableFrom: formData.availableFrom,
+      });
 
       if (response.data.success) {
         toast.success('Application submitted successfully!');

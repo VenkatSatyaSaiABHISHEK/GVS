@@ -69,7 +69,7 @@ const JobForm = ({ onSubmit, onCancel, form, companies }) => {
                     <SelectContent>
                       {!!companies &&
                         companies?.map((company) => (
-                          <SelectItem key={company._id} value={company._id}>
+                          <SelectItem key={company.id} value={company.id}>
                             <div className="flex flex-row items-center">
                               <Avatar className="mr-2 h-7 w-7">
                                 <AvatarImage src={company.logo} />
@@ -472,7 +472,7 @@ JobForm.propTypes = {
   form: PropTypes.object.isRequired,
   companies: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
       logo: PropTypes.string,
     })

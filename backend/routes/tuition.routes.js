@@ -9,6 +9,7 @@ router.use(protect);
 router.get("/dashboard", authorize("parent"), tuitionControllers.getParentDashboard);
 router.get("/tutors", tuitionControllers.getAvailableTutors); // Allow all authenticated users
 router.get("/tutors/:tutorId", tuitionControllers.getTutorDetails);
+router.post("/tutors/compare", authorize("parent"), tuitionControllers.compareTeachers);
 router.post("/request", authorize("parent"), tuitionControllers.createTuitionRequest);
 router.get("/my-requests", authorize("parent"), tuitionControllers.getParentRequests);
 router.patch("/request/:requestId/cancel", authorize("parent"), tuitionControllers.cancelRequest);

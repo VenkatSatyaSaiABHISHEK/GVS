@@ -33,7 +33,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axiosInstance.get('/api/admin/users');
+      const response = await axiosInstance.get('/admin/users');
       if (response.data.success) {
         setUsers(response.data.data.users || []);
       }
@@ -47,7 +47,7 @@ const AdminUsers = () => {
 
   const handleUserAction = async (userId, action) => {
     try {
-      await axiosInstance.patch(`/api/admin/users/${userId}/status`, {
+      await axiosInstance.patch(`/admin/users/${userId}/status`, {
         status: action
       });
       toast.success(`User ${action} successfully`);
@@ -57,15 +57,22 @@ const AdminUsers = () => {
     }
   };
 
+  // Map backend roles to display roles
+  const mapRole = (role) => {
+    const roleMap = { jobSeeker: 'teacher', recruiter: 'school', parent: 'parent', admin: 'admin' };
+    return roleMap[role] || role;
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    const matchesRole = filterRole === 'all' || mapRole(user.role) === filterRole;
     return matchesSearch && matchesRole;
   });
 
   const getRoleIcon = (role) => {
-    switch (role) {
+    const mapped = mapRole(role);
+    switch (mapped) {
       case 'teacher': return GraduationCap;
       case 'school': return Building;
       case 'parent': return User;
@@ -74,7 +81,8 @@ const AdminUsers = () => {
   };
 
   const getRoleColor = (role) => {
-    switch (role) {
+    const mapped = mapRole(role);
+    switch (mapped) {
       case 'teacher': return 'from-purple-500 to-purple-600';
       case 'school': return 'from-blue-500 to-blue-600';
       case 'parent': return 'from-green-500 to-green-600';
@@ -132,7 +140,7 @@ const AdminUsers = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Teachers</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {users.filter(u => u.role === 'teacher').length}
+                  {users.filter(u => mapRole(u.role) === 'teacher').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center">
@@ -148,7 +156,7 @@ const AdminUsers = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Schools</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {users.filter(u => u.role === 'school').length}
+                  {users.filter(u => mapRole(u.role) === 'school').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
@@ -247,7 +255,7 @@ const AdminUsers = () => {
                           {user.isVerified ? "Verified" : "Unverified"}
                         </Badge>
                         <Badge variant="outline" className="capitalize">
-                          {user.role}
+                          {mapRole(user.role)}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -278,7 +286,7 @@ const AdminUsers = () => {
                         variant="outline" 
                         size="sm"
                         className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => handleUserAction(user._id, 'suspended')}
+                        onClick={() => handleUserAction(user.id, 'suspended')}
                       >
                         <UserX className="w-4 h-4 mr-1" />
                         Suspend
@@ -287,7 +295,7 @@ const AdminUsers = () => {
                       <Button 
                         size="sm" 
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleUserAction(user._id, 'active')}
+                        onClick={() => handleUserAction(user.id, 'active')}
                       >
                         <UserCheck className="w-4 h-4 mr-1" />
                         Activate

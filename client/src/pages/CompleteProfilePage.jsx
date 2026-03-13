@@ -8,28 +8,33 @@ import { Upload, Loader2, AlertCircle } from 'lucide-react';
 const CompleteProfilePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Safe destructuring with defaults
+  const profileCompletion = useProfileCompletion();
   const {
-    profile,
-    requiredFields,
-    profileCompleted,
+    profile = null,
+    requiredFields = [],
+    profileCompleted = false,
     completeProfile,
-    isCompletingProfile,
+    isCompletingProfile = false,
     uploadProfilePicture,
-    isUploadingPicture,
-    fieldsLoading,
+    isUploadingPicture = false,
+    fieldsLoading = false,
     refetchProfile
-  } = useProfileCompletion();
+  } = profileCompletion || {};
 
   const [formData, setFormData] = useState({});
   const [profileImage, setProfileImage] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // Initialize form with existing data
+  // Initialize form with existing data - with safe checks
   useEffect(() => {
-    if (profile) {
+    if (profile && Array.isArray(requiredFields) && requiredFields.length > 0) {
       const initialData = {};
       requiredFields.forEach(field => {
-        initialData[field.name] = profile[field.name] || '';
+        if (field && field.name) {
+          initialData[field.name] = profile[field.name] || '';
+        }
       });
       setFormData(initialData);
       if (profile.profilePic) {
@@ -38,22 +43,35 @@ const CompleteProfilePage = () => {
     }
   }, [profile, requiredFields]);
 
+  // Map backend roles to frontend route paths
+  const roleToRoute = {
+    jobSeeker: "teacher",
+    recruiter: "school",
+    teacher: "teacher",
+    school: "school",
+    parent: "parent",
+    admin: "admin",
+  };
+
   // Redirect if profile already completed
   useEffect(() => {
     if (profileCompleted) {
-      navigate(`/dashboard/${user?.role}`, { replace: true });
+      const route = roleToRoute[user?.role] || user?.role;
+      navigate(`/dashboard/${route}`, { replace: true });
     }
   }, [profileCompleted, navigate, user?.role]);
 
   const validateForm = () => {
     const newErrors = {};
     
+    if (!Array.isArray(requiredFields)) return true;
+    
     requiredFields.forEach(field => {
-      if (field.required) {
+      if (field && field.required && field.name) {
         const value = formData[field.name];
         
         if (!value || (Array.isArray(value) && value.length === 0)) {
-          newErrors[field.name] = `${field.label} is required`;
+          newErrors[field.name] = `${field.label || field.name} is required`;
         }
         
         // Validate email
@@ -67,7 +85,7 @@ const CompleteProfilePage = () => {
         // Validate phone
         if (field.type === 'tel' && value) {
           const phoneRegex = /^\d{10}$/;
-          if (!phoneRegex.test(value.replace(/\D/g, ''))) {
+          if (!phoneRegex.test(String(value).replace(/\D/g, ''))) {
             newErrors[field.name] = 'Please enter a valid 10-digit phone number';
           }
         }
@@ -142,6 +160,12 @@ const CompleteProfilePage = () => {
       </div>
     );
   }
+
+  // Ensure requiredFields is a valid array before rendering the form
+  const safeRequiredFields = Array.isArray(requiredFields) ? requiredFields : [];
+  const renderableFields = safeRequiredFields.filter(
+    (field) => field && field.name && field.name !== 'profilePic'
+  );
 
   if (!user) {
     return (
@@ -225,10 +249,11 @@ const CompleteProfilePage = () => {
 
           {/* Form Fields */}
           <div className="space-y-6">
-            {requiredFields.map(field => (
+            {renderableFields.map(field => (
+              field && field.name ? (
               <div key={field.name}>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {field.label}
+                  {field.label || field.name}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
 
@@ -236,7 +261,7 @@ const CompleteProfilePage = () => {
                   <textarea
                     value={formData[field.name] || ''}
                     onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
+                    placeholder={`Enter ${(field.label || field.name).toLowerCase()}`}
                     rows={4}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       errors[field.name] ? 'border-red-500' : 'border-gray-300'
@@ -250,40 +275,70 @@ const CompleteProfilePage = () => {
                       errors[field.name] ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
-                    <option value="">Select {field.label}</option>
-                    {field.options?.map(option => (
+                    <option value="">Select {field.label || field.name}</option>
+                    {(Array.isArray(field.options) ? field.options : []).map(option => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 ) : field.type === 'array' ? (
-                  <div className="flex flex-wrap gap-2">
-                    {field.options?.map(option => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => {
-                          const current = formData[field.name] || [];
-                          const updated = current.includes(option)
-                            ? current.filter(s => s !== option)
-                            : [...current, option];
-                          handleInputChange(field.name, updated);
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          (formData[field.name] || []).includes(option)
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
+                  Array.isArray(field.options) && field.options.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {field.options.map(option => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            const current = formData[field.name] || [];
+                            const updated = current.includes(option)
+                              ? current.filter(s => s !== option)
+                              : [...current, option];
+                            handleInputChange(field.name, updated);
+                          }}
+                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                            (formData[field.name] || []).includes(option)
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={Array.isArray(formData[field.name]) ? formData[field.name].join(', ') : ''}
+                      onChange={(e) => {
+                        const values = e.target.value
+                          .split(',')
+                          .map((item) => item.trim())
+                          .filter(Boolean);
+                        handleInputChange(field.name, values);
+                      }}
+                      placeholder={`Enter ${(field.label || field.name).toLowerCase()} (comma separated)`}
+                      className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                        errors[field.name] ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                  )
+                ) : field.type === 'boolean' ? (
+                  <label className="flex items-center gap-3 rounded-lg border border-gray-300 px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData[field.name])}
+                      onChange={(e) => handleInputChange(field.name, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      {field.label || field.name}
+                    </span>
+                  </label>
                 ) : (
                   <input
                     type={field.type}
                     value={formData[field.name] || ''}
                     onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
+                    placeholder={`Enter ${(field.label || field.name).toLowerCase()}`}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                       errors[field.name] ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -294,6 +349,7 @@ const CompleteProfilePage = () => {
                   <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
                 )}
               </div>
+              ) : null
             ))}
           </div>
 

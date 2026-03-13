@@ -53,17 +53,17 @@ const ApplicantCard = ({ application }) => {
             </div>
           </div>
           <Badge
-            onClick={() => handleSetOpen(applicant._id, true)}
+            onClick={() => handleSetOpen(applicant.id, true)}
             className={`${statusColors[status]} text-white`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}{" "}
             <SquarePen size={20} className="ml-2" />
           </Badge>
           <CandidateStatus
-            open={openStates[applicant._id] || false}
-            setOpen={(isOpen) => handleSetOpen(applicant._id, isOpen)}
-            candidateId={applicant._id}
-            applicationId={application._id}
+            open={openStates[applicant.id] || false}
+            setOpen={(isOpen) => handleSetOpen(applicant.id, isOpen)}
+            candidateId={applicant.id}
+            applicationId={application.id}
             status={application.status}
           />
         </div>
@@ -124,11 +124,11 @@ const ApplicantCard = ({ application }) => {
 
 ApplicantCard.propTypes = {
   application: PropTypes.shape({
-    _id: PropTypes.string,
+    id: PropTypes.string,
     appliedAt: PropTypes.string,
     status: PropTypes.string,
     applicant: PropTypes.shape({
-      _id: PropTypes.string,
+      id: PropTypes.string,
       profilePic: PropTypes.string, // Added profilePic to PropTypes
       fullName: PropTypes.string,
       yoe: PropTypes.string,

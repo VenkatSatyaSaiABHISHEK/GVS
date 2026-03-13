@@ -39,25 +39,28 @@ export const useAuth = () => {
   console.log("useAuth - isAuthenticated from localStorage:", isAuthenticated);
 
   const {
-    isLoading,
+    isLoading: queryLoading,
     error,
     data,
     refetch: refetchUser,
   } = useQuery({
     queryKey: ["currentUser"],
     queryFn: fetchCurrentUser,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated === true,
     retry: (failureCount, error) => {
       // Don't retry on 401 errors
       if (error?.response?.status === 401) {
         return false;
       }
-      return failureCount < 3;
+      return failureCount < 2;
     },
     retryDelay: 1000,
-    gcTime: 1000 * 60 * 15, // Cache for 15 minutes (renamed from cacheTime)
-    staleTime: 1000 * 60 * 30, // Cache for 30 minutes
+    gcTime: 1000 * 60 * 30, // Cache for 30 minutes
+    staleTime: 1000 * 60 * 15, // Consider stale after 15 minutes
   });
+
+  // Only show loading if authenticated AND query is actually loading
+  const isLoading = isAuthenticated === true && queryLoading;
 
   console.log("useAuth - query state:", { isLoading, error: error?.message, hasData: !!data?.user });
 

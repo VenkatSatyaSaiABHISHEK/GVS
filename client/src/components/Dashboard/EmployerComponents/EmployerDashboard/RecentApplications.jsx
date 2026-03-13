@@ -29,11 +29,11 @@ const RecentApplications = ({ recentApplications, onSelectApplicant }) => {
       <CardContent>
         <ul className="grid grid-flow-row-dense gap-2">
           {recentApplications.map((app) => (
-            <div key={app._id}>
+            <div key={app.id}>
               <li className="flex bg-muted rounded-3xl py-4 px-6 border items-center justify-between hover:bg-muted/20">
                 <div
                   className="cursor-pointer"
-                  onClick={() => onSelectApplicant(app.applicant._id)}
+                  onClick={() => onSelectApplicant(app.applicant.id)}
                 >
                   <p className="font-medium">{app.applicant.fullName}</p>
                   <p className="text-sm text-muted-foreground">
@@ -44,7 +44,7 @@ const RecentApplications = ({ recentApplications, onSelectApplicant }) => {
                   </p>
                 </div>
                 <Badge
-                  onClick={() => handleSetOpen(app.applicant._id, true)}
+                  onClick={() => handleSetOpen(app.applicant.id, true)}
                   className="cursor-pointer"
                   variant={
                     app.status === "applied"
@@ -59,10 +59,10 @@ const RecentApplications = ({ recentApplications, onSelectApplicant }) => {
                 </Badge>
               </li>
               <CandidateStatus
-                open={openStates[app.applicant._id] || false}
-                setOpen={(isOpen) => handleSetOpen(app.applicant._id, isOpen)}
-                candidateId={app.applicant._id}
-                applicationId={app._id}
+                open={openStates[app.applicant.id] || false}
+                setOpen={(isOpen) => handleSetOpen(app.applicant.id, isOpen)}
+                candidateId={app.applicant.id}
+                applicationId={app.id}
                 status={app.status}
               />
             </div>
@@ -77,9 +77,9 @@ RecentApplications.propTypes = {
   onSelectApplicant: PropTypes.func,
   recentApplications: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       applicant: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
+        id: PropTypes.string.isRequired,
         fullName: PropTypes.string.isRequired,
       }).isRequired,
       job: PropTypes.shape({

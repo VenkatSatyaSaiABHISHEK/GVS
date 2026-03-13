@@ -7,7 +7,7 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
@@ -20,23 +20,78 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      // Use inline styles to ensure visibility even if CSS fails to load
       return (
-        <div className="min-h-screen flex items-center justify-center bg-red-50">
-          <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-lg">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
-            <details className="text-left">
-              <summary className="cursor-pointer text-sm text-gray-600 mb-2">Error Details</summary>
-              <pre className="text-xs bg-gray-100 p-4 rounded overflow-auto">
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#fef2f2',
+          padding: '20px',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{
+            textAlign: 'center',
+            padding: '32px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+            maxWidth: '600px'
+          }}>
+            <h1 style={{ color: '#dc2626', fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+              Something went wrong
+            </h1>
+            <p style={{ color: '#666', marginBottom: '16px' }}>
+              The application encountered an error. Please try refreshing the page.
+            </p>
+            <details style={{ textAlign: 'left', marginBottom: '16px' }}>
+              <summary style={{ cursor: 'pointer', color: '#666', fontSize: '14px' }}>
+                Error Details (click to expand)
+              </summary>
+              <pre style={{
+                fontSize: '12px',
+                backgroundColor: '#f3f4f6',
+                padding: '16px',
+                borderRadius: '4px',
+                overflow: 'auto',
+                marginTop: '8px',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
                 {this.state.error && this.state.error.toString()}
-                <br />
-                {this.state.errorInfo.componentStack}
+                {this.state.errorInfo && this.state.errorInfo.componentStack}
               </pre>
             </details>
             <button 
-              onClick={() => window.location.reload()} 
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => {
+                localStorage.clear();
+                window.location.href = '/';
+              }}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                marginRight: '10px'
+              }}
             >
-              Reload Page
+              Clear Data & Reload
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#6b7280',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              Just Reload
             </button>
           </div>
         </div>

@@ -1,65 +1,50 @@
-import { Education, User } from "../../models/User.js";
+import prisma from "../../db/db.js";
 
 export const getEducations = async (req, res) => {
-  const { id } = req.user;
   try {
-    const education = await Education.find({ _id: { $in: id.education } });
+    const education = await prisma.education.findMany({
+      where: { userId: req.user.id },
+    });
     res.status(200).json({
       success: true,
       message: "Education records fetched successfully.",
       education,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch education records" });
+    res.status(500).json({ success: false, message: "Failed to fetch education records" });
   }
 };
 
 export const addEducation = async (req, res) => {
-  const educationData = req.body;
-  console.log("Education Data:", educationData);
-
   try {
-    // Create a new education record
-    const newEducation = new Education(educationData);
-    await newEducation.save();
+    const newEducation = await prisma.education.create({
+      data: {
+        ...req.body,
+        userId: req.user.id,
+      },
+    });
 
-    // Add education reference to the user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { education: newEducation._id } },
-      { new: true }
-    ).populate("education");
+    const allEducation = await prisma.education.findMany({
+      where: { userId: req.user.id },
+    });
 
     res.status(201).json({
       success: true,
       message: "Education record added successfully.",
-      education: user.education,
+      education: allEducation,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to add education record" });
+    res.status(500).json({ success: false, message: "Failed to add education record" });
   }
 };
 
 export const updateEducation = async (req, res) => {
-  const { educationId } = req.params;
-  const updatedData = req.body;
-
+  const eduId = req.params.educationId || req.params.eduId;
   try {
-    const updatedEducation = await Education.findByIdAndUpdate(
-      educationId,
-      { $set: updatedData },
-      { new: true }
-    );
-
-    if (!updatedEducation) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Education record not found" });
-    }
+    const updatedEducation = await prisma.education.update({
+      where: { id: eduId },
+      data: req.body,
+    });
 
     res.status(200).json({
       success: true,
@@ -67,32 +52,28 @@ export const updateEducation = async (req, res) => {
       education: updatedEducation,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update education record" });
+    if (error.code === "P2025") {
+      return res.status(404).json({ success: false, message: "Education record not found" });
+    }
+    res.status(500).json({ success: false, message: "Failed to update education record" });
   }
 };
 
 export const removeEducation = async (req, res) => {
-  const { eduId } = req.params;
-
+  const eduId = req.params.eduId;
   try {
-    await Education.findByIdAndDelete(eduId);
+    await prisma.education.delete({ where: { id: eduId } });
 
-    // Remove education reference from user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $pull: { education: eduId } },
-      { new: true }
-    );
+    const remaining = await prisma.education.findMany({
+      where: { userId: req.user.id },
+    });
+
     res.status(200).json({
       success: true,
       message: "Education record removed successfully.",
-      education: user.education,
+      education: remaining,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to remove education record" });
+    res.status(500).json({ success: false, message: "Failed to remove education record" });
   }
 };

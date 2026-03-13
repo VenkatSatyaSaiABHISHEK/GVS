@@ -1,9 +1,37 @@
 import React from 'react';
 import { MapPin, Clock, Briefcase, ChevronRight, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatLocation } from '@/utils/formatLocation';
 
 const RecommendedJobs = ({ jobs }) => {
   const navigate = useNavigate();
+
+  const toDisplayText = (value, fallback = 'N/A') => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed || fallback;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((item) => toDisplayText(item, ''))
+        .filter(Boolean);
+      return parts.length ? parts.join(', ') : fallback;
+    }
+    if (typeof value === 'object') {
+      if ('city' in value || 'state' in value || 'country' in value) {
+        return formatLocation(value, fallback);
+      }
+      const parts = Object.values(value)
+        .map((item) => toDisplayText(item, ''))
+        .filter(Boolean);
+      return parts.length ? parts.join(', ') : fallback;
+    }
+    return fallback;
+  };
 
   // Mock data if none provided
   const recommendedJobs = jobs || [
@@ -94,46 +122,46 @@ const RecommendedJobs = ({ jobs }) => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-800 hover:text-purple-600 transition-colors">
-                    {job.title}
+                    {toDisplayText(job.title, 'Untitled Job')}
                   </h4>
-                  <p className="text-sm text-gray-600">{job.school}</p>
+                  <p className="text-sm text-gray-600">{toDisplayText(job.school, 'School')}</p>
                 </div>
               </div>
               <div className={`px-2 py-1 rounded-full text-xs font-medium ${getMatchColor(job.match)}`}>
-                {job.match}% match
+                {toDisplayText(job.match, 0)}% match
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-3 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4" />
-                <span>{job.location}</span>
+                <span>{formatLocation(job.location)}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Briefcase className="w-4 h-4" />
-                <span>{job.type}</span>
+                <span>{toDisplayText(job.type, 'Not specified')}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Clock className="w-4 h-4" />
-                <span>{job.posted}</span>
+                <span>{toDisplayText(job.posted, 'Recently')}</span>
               </div>
               <div className="font-medium text-gray-800">
-                {job.salary}
+                {toDisplayText(job.salary, 'Salary not specified')}
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
-              {job.requirements.slice(0, 2).map((req, index) => (
+              {(Array.isArray(job.requirements) ? job.requirements : []).slice(0, 2).map((req, index) => (
                 <span 
                   key={index}
                   className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md"
                 >
-                  {req}
+                  {toDisplayText(req, 'Requirement')}
                 </span>
               ))}
-              {job.requirements.length > 2 && (
+              {(Array.isArray(job.requirements) ? job.requirements.length : 0) > 2 && (
                 <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                  +{job.requirements.length - 2} more
+                  +{(Array.isArray(job.requirements) ? job.requirements.length : 0) - 2} more
                 </span>
               )}
             </div>

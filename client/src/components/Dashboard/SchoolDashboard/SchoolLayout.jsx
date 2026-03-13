@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getMyNotifications } from '@/services/notificationServices';
 import {
   Home,
   Search,
@@ -31,6 +33,14 @@ const SchoolLayout = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { mutate: logoutUser } = logout;
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ['school-notifications'],
+    queryFn: getMyNotifications,
+    refetchInterval: 30000,
+  });
+
+  const unreadNotifications = notificationsData?.unreadCount || 0;
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard/school', active: true },
@@ -170,7 +180,7 @@ const SchoolLayout = ({ children }) => {
             >
               <Bell className="w-6 h-6 text-gray-600" />
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#6C5CE7] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                3
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
               </span>
             </Link>
 

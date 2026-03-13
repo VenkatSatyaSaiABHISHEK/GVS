@@ -78,7 +78,7 @@ const TeacherTuitions = () => {
                     </Card>
                 ) : (
                     data.requests.map((request) => (
-                        <Card key={request._id} className="relative overflow-hidden border-2 hover:border-primary/20 transition-all">
+                        <Card key={request.id} className="relative overflow-hidden border-2 hover:border-primary/20 transition-all">
                             <CardContent className="p-0">
                                 <div className="p-5 flex flex-col md:flex-row gap-6 items-start">
                                     <Avatar className="h-16 w-16 border-2 border-primary/10">
@@ -112,10 +112,10 @@ const TeacherTuitions = () => {
                                         <div className="flex flex-wrap gap-3 pt-2 items-center">
                                             {request.status === "pending" && (
                                                 <>
-                                                    <Button variant="default" className="gap-2" onClick={() => handleStatusUpdate(request._id, 'accepted')}>
+                                                    <Button variant="default" className="gap-2" onClick={() => handleStatusUpdate(request.id, 'accepted')}>
                                                         <CheckCircle2 size={16} /> Accept
                                                     </Button>
-                                                    <Button variant="outline" className="gap-2 text-red-600 hover:text-red-700" onClick={() => handleStatusUpdate(request._id, 'rejected')}>
+                                                    <Button variant="outline" className="gap-2 text-red-600 hover:text-red-700" onClick={() => handleStatusUpdate(request.id, 'rejected')}>
                                                         <XCircle size={16} /> Decline
                                                     </Button>
                                                 </>
@@ -132,7 +132,7 @@ const TeacherTuitions = () => {
                                                         <Calendar
                                                             mode="single"
                                                             onSelect={(date) => {
-                                                                if (date) handleStatusUpdate(request._id, 'scheduled', date);
+                                                                if (date) handleStatusUpdate(request.id, 'scheduled', date);
                                                             }}
                                                             initialFocus
                                                         />
@@ -171,12 +171,12 @@ const TeacherTuitions = () => {
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <Input
-                                                                id={`note-${request._id}`}
+                                                                id={`note-${request.id}`}
                                                                 placeholder="Type a new note..."
                                                                 onKeyDown={(e) => {
                                                                     if (e.key === 'Enter' && e.currentTarget.value) {
                                                                         statusMutation.mutate({
-                                                                            id: request._id,
+                                                                            id: request.id,
                                                                             data: { newNote: e.currentTarget.value }
                                                                         });
                                                                         e.currentTarget.value = "";

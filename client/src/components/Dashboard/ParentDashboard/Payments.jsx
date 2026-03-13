@@ -1,7 +1,6 @@
 import React from "react";
 import { User, Download, Eye } from "lucide-react";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 const Payments = () => {
 
@@ -21,14 +20,8 @@ const Payments = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        <ParentSidebar />
-
-        <div className="ml-[260px] flex-1">
-          <ParentTopbar title="Payments" searchPlaceholder="Search payments..." />
-
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-[#111827] mb-2">Payment History</h2>
               <p className="text-[#6B7280]">Track your tuition payments and invoices</p>
@@ -105,9 +98,7 @@ const Payments = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

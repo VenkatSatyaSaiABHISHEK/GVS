@@ -49,7 +49,7 @@ const SettingsSidebar = () => {
     >
       <Button
         variant="outline"
-        onClick={() => navigate(`/dashboard/${user?.role}`)}
+        onClick={() => { const roleMap = { jobSeeker: 'teacher', recruiter: 'school', teacher: 'teacher', school: 'school', parent: 'parent', admin: 'admin' }; navigate(`/dashboard/${roleMap[user?.role] || user?.role}`); }}
         className="group transition-all flex items-center justify-center w-full px-1.5 lg:px-4 py-2 text-center border rounded-full hover:bg-white hover:invert"
       >
         <ArrowLeft
@@ -92,7 +92,7 @@ const SettingsSidebar = () => {
         <div className="flex px-1 lg:px-1 flex-row lg:flex-col min-h-full border rounded-3xl w-fit lg:min-w-full space-x-1.5 lg:space-x-0 lg:space-y-2 p-1 bg-cyan-300/20 lg:p-3 gap-0.5 lg:gap-0 font-semibold overflow-hidden lg:overflow-clip z-20">
           {(isRecruiter || isAdmin) && (
             <>
-              {renderNavLink(`/dashboard/${user.role}`, <Home />, "Dashboard")}
+              {renderNavLink(`/dashboard/${{ jobSeeker: 'teacher', recruiter: 'school', teacher: 'teacher', school: 'school', parent: 'parent', admin: 'admin' }[user.role] || user.role}`, <Home />, "Dashboard")}
             </>
           )}
           {isRecruiter && (

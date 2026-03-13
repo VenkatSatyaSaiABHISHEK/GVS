@@ -18,15 +18,15 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 const ApplicantsDrawer = ({ job, isBookmarked, open, setOpen }) => {
-  const { _id, title, location, company, postedAt, combinedField } = job;
+  const { id, title, location, company, postedAt, combinedField } = job;
   const {
     data: applicants,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["job-applications", _id],
-    queryFn: () => getJobApplications(_id),
-    enabled: !!_id && open,
+    queryKey: ["job-applications", id],
+    queryFn: () => getJobApplications(id),
+    enabled: !!id && open,
   });
 
   useEffect(() => {
@@ -87,7 +87,7 @@ const ApplicantsDrawer = ({ job, isBookmarked, open, setOpen }) => {
             </div>
             <div className="grid mt-4 order-1 lg:order-2 justify-end gap-1 lg:gap-5 grid-flow-col-dense">
               <div className="rounded-sm border h-fit bg-background">
-                <BookmarkButton jobId={_id} isBookmarked={isBookmarked} />
+                <BookmarkButton jobId={id} isBookmarked={isBookmarked} />
               </div>
             </div>
           </div>
@@ -112,7 +112,7 @@ const ApplicantsDrawer = ({ job, isBookmarked, open, setOpen }) => {
             <div className="grid xl:grid-cols-3 gap-4">
               {applicants?.map((application) => (
                 <ApplicantCard
-                  key={application._id}
+                  key={application.id}
                   application={application}
                 />
               ))}
@@ -131,11 +131,11 @@ const ApplicantsDrawer = ({ job, isBookmarked, open, setOpen }) => {
 ApplicantsDrawer.propTypes = {
   isBookmarked: PropTypes.bool.isRequired,
   job: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
+    id: PropTypes.string.isRequired,
     company: PropTypes.shape({
       name: PropTypes.string.isRequired,
       logo: PropTypes.string.isRequired,
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
     }).isRequired,
     title: PropTypes.string.isRequired,
     description: PropTypes.string,

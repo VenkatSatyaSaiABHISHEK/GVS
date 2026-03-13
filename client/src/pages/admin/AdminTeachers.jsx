@@ -34,7 +34,7 @@ const AdminTeachers = () => {
 
   const fetchTeachers = async () => {
     try {
-      const response = await axiosInstance.get('/api/admin/users?role=teacher');
+      const response = await axiosInstance.get('/admin/users?role=jobSeeker');
       if (response.data.success) {
         setTeachers(response.data.data.users || []);
       }
@@ -48,7 +48,7 @@ const AdminTeachers = () => {
 
   const handleVerifyTeacher = async (teacherId) => {
     try {
-      await axiosInstance.patch(`/api/admin/users/${teacherId}/status`, {
+      await axiosInstance.patch(`/admin/users/${teacherId}/status`, {
         isVerified: true
       });
       toast.success('Teacher verified successfully');
@@ -60,7 +60,7 @@ const AdminTeachers = () => {
 
   const handleSuspendTeacher = async (teacherId) => {
     try {
-      await axiosInstance.patch(`/api/admin/users/${teacherId}/status`, {
+      await axiosInstance.patch(`/admin/users/${teacherId}/status`, {
         status: 'suspended'
       });
       toast.success('Teacher suspended successfully');
@@ -270,7 +270,7 @@ const AdminTeachers = () => {
                     <Button 
                       size="sm" 
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleVerifyTeacher(teacher._id)}
+                      onClick={() => handleVerifyTeacher(teacher.id)}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Verify
@@ -280,7 +280,7 @@ const AdminTeachers = () => {
                     variant="outline" 
                     size="sm"
                     className="text-red-600 border-red-200 hover:bg-red-50"
-                    onClick={() => handleSuspendTeacher(teacher._id)}
+                    onClick={() => handleSuspendTeacher(teacher.id)}
                   >
                     <XCircle className="w-4 h-4 mr-1" />
                     Suspend

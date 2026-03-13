@@ -175,7 +175,7 @@ const TeacherProfileEdit = () => {
       }
 
       // Call API to update profile
-      const response = await axiosInstance.put('/api/user/profile-update', updateData);
+      const response = await axiosInstance.put('/user/profile-update', updateData);
 
       if (response.data.success) {
         toast.success('Profile updated successfully!');

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axiosInstance from '@/lib/axiosInstance';
 import TeacherLayout from './TeacherDashboard/TeacherLayout';
+import { formatLocation } from '@/utils/formatLocation';
 import { 
   Calendar, Briefcase, Users, Mail, User, CheckCircle, XCircle, 
   MessageCircle, Star, Book, Bell, MapPin, TrendingUp, ChevronRight, Building2
@@ -367,7 +368,7 @@ const TeacherDashboardOverview = () => {
                         </span>
                         <p className="text-xs text-gray-500 flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {job.location || 'London, England'}
+                          {formatLocation(job.location, 'London, England')}
                         </p>
                       </div>
                     </div>

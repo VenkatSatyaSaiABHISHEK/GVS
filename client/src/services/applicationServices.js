@@ -23,11 +23,41 @@ export const getJobApplications = async (jobId) => {
 };
 
 export const getRecruiterDashboard = async () => {
-  const { data } = await axiosInstance.get(`/${BASE}/school/dashboard`);
+  const { data } = await axiosInstance.get(`/${BASE}/school`);
+  return data;
+};
+
+export const getSchoolPipeline = async (params = {}) => {
+  const { data } = await axiosInstance.get(`/${BASE}/school/pipeline`, { params });
   return data;
 };
 
 export const updateApplicationStatus = async (applicationId, status) => {
   const { data } = await axiosInstance.patch(`/${BASE}/${applicationId}/status`, { status });
+  return data;
+};
+
+export const scheduleInterview = async (applicationId, payload) => {
+  const { data } = await axiosInstance.patch(`/${BASE}/${applicationId}/interview`, payload);
+  return data;
+};
+
+export const submitInterviewFeedback = async (applicationId, payload) => {
+  const { data } = await axiosInstance.patch(`/${BASE}/${applicationId}/interview-feedback`, payload);
+  return data;
+};
+
+export const sendOfferLetter = async (applicationId, payload) => {
+  const { data } = await axiosInstance.patch(`/${BASE}/${applicationId}/offer`, payload);
+  return data;
+};
+
+export const respondToOffer = async (applicationId, action) => {
+  const { data } = await axiosInstance.patch(`/${BASE}/${applicationId}/offer/respond`, { action });
+  return data;
+};
+
+export const getRecommendedJobsForTeacher = async () => {
+  const { data } = await axiosInstance.get(`/${BASE}/teacher/recommended-jobs`);
   return data;
 };

@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: gvs-portal-backend:latest # We will tag the image for ECR later
+    container_name: gvs-portal-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # These will be configured in AWS ECS Task Definition
+      - DATABASE_URL=your_production_database_url
+      - JWT_SECRET=your_production_jwt_secret
+      - CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+      - CLOUDINARY_API_KEY=your_cloudinary_api_key
+      - CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    image: gvs-portal-client:latest # We will tag the image for ECR later
+    container_name: gvs-portal-client
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

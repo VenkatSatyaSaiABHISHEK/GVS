@@ -36,6 +36,15 @@ export const getRequiredFields = async () => {
   }
 };
 
+export const getProfileStrength = async () => {
+  try {
+    const response = await axiosInstance.get('/profile/strength');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+
 /**
  * Complete profile (first time)
  */

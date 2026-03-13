@@ -26,7 +26,7 @@ const UserJobListings = () => {
   const isBookmarked = (jobId) => {
     return (
       user?.bookmarkedJobs?.some(
-        (bookmarkedJob) => bookmarkedJob?._id === jobId
+        (bookmarkedJob) => bookmarkedJob?.id === jobId
       ) || false
     );
   };
@@ -51,15 +51,15 @@ const UserJobListings = () => {
             data?.pages?.map((page, i) => (
               <Fragment key={i}>
                 {page?.jobs?.map((job) => (
-                  <div key={job._id}>
+                  <div key={job.id}>
                     <JobCard
-                      isBookmarked={isBookmarked(job._id)}
-                      key={job._id}
+                      isBookmarked={isBookmarked(job.id)}
+                      key={job.id}
                       job={job}
                     >
                       <JobDetails
                         job={job}
-                        isBookmarked={isBookmarked(job._id)}
+                        isBookmarked={isBookmarked(job.id)}
                       />
                     </JobCard>
                   </div>

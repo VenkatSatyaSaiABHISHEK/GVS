@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import axiosInstance from '@/lib/axiosInstance';
 import { toast } from 'sonner';
+import { formatLocation } from '@/utils/formatLocation';
 
 const AdminJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -32,7 +33,7 @@ const AdminJobs = () => {
 
   const fetchJobs = async () => {
     try {
-      const response = await axiosInstance.get('/api/jobs');
+      const response = await axiosInstance.get('/jobs/get-all');
       if (response.data.success) {
         setJobs(response.data.data || []);
       }
@@ -46,7 +47,7 @@ const AdminJobs = () => {
 
   const handleApproveJob = async (jobId) => {
     try {
-      await axiosInstance.patch(`/api/jobs/${jobId}/status`, {
+      await axiosInstance.patch(`/jobs/${jobId}/status`, {
         status: 'active'
       });
       toast.success('Job approved successfully');
@@ -58,7 +59,7 @@ const AdminJobs = () => {
 
   const handleRejectJob = async (jobId) => {
     try {
-      await axiosInstance.patch(`/api/jobs/${jobId}/status`, {
+      await axiosInstance.patch(`/jobs/${jobId}/status`, {
         status: 'rejected'
       });
       toast.success('Job rejected');
@@ -247,7 +248,7 @@ const AdminJobs = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
-                        {job.location || 'Location not specified'}
+                        {formatLocation(job.location)}
                       </div>
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
@@ -270,7 +271,7 @@ const AdminJobs = () => {
                       <Button 
                         size="sm" 
                         className="bg-green-600 hover:bg-green-700"
-                        onClick={() => handleApproveJob(job._id)}
+                        onClick={() => handleApproveJob(job.id)}
                       >
                         <CheckCircle className="w-4 h-4 mr-1" />
                         Approve
@@ -279,7 +280,7 @@ const AdminJobs = () => {
                         variant="outline" 
                         size="sm"
                         className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => handleRejectJob(job._id)}
+                        onClick={() => handleRejectJob(job.id)}
                       >
                         <XCircle className="w-4 h-4 mr-1" />
                         Reject

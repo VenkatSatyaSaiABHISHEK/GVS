@@ -108,13 +108,13 @@ const AdminDashboard = () => {
                                     {users.length === 0 ? (
                                         <TableRow><TableCell colSpan={5} className="text-center py-4">No users found.</TableCell></TableRow>
                                     ) : users.map(u => (
-                                        <TableRow key={u._id}>
+                                        <TableRow key={u.id}>
                                             <TableCell>
                                                 <div className="font-medium">{u.fullName || "N/A"}</div>
                                                 <div className="text-sm text-muted-foreground">{u.email}</div>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline" className="capitalize">{u.role}</Badge>
+                                                <Badge variant="outline" className="capitalize">{{ jobSeeker: 'Teacher', recruiter: 'School', parent: 'Parent', admin: 'Admin' }[u.role] || u.role}</Badge>
                                             </TableCell>
                                             <TableCell>
                                                 {format(new Date(u.createdAt), "dd MMM yyyy")}
@@ -131,21 +131,21 @@ const AdminDashboard = () => {
                                             </TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 {!u.isVerified ? (
-                                                    <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 font-semibold" onClick={() => verifyMutation.mutate({ id: u._id, isVerified: true })}>
+                                                    <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 font-semibold" onClick={() => verifyMutation.mutate({ id: u.id, isVerified: true })}>
                                                         <CheckCircle className="mr-1" size={14} /> Approve
                                                     </Button>
                                                 ) : (
-                                                    <Button size="sm" variant="secondary" onClick={() => verifyMutation.mutate({ id: u._id, isVerified: false })}>
+                                                    <Button size="sm" variant="secondary" onClick={() => verifyMutation.mutate({ id: u.id, isVerified: false })}>
                                                         Revoke
                                                     </Button>
                                                 )}
 
                                                 {u.isBlocked ? (
-                                                    <Button size="sm" variant="outline" onClick={() => blockMutation.mutate({ id: u._id, isBlocked: false })}>
+                                                    <Button size="sm" variant="outline" onClick={() => blockMutation.mutate({ id: u.id, isBlocked: false })}>
                                                         Unblock
                                                     </Button>
                                                 ) : (
-                                                    <Button size="sm" variant="destructive" onClick={() => blockMutation.mutate({ id: u._id, isBlocked: true })}>
+                                                    <Button size="sm" variant="destructive" onClick={() => blockMutation.mutate({ id: u.id, isBlocked: true })}>
                                                         <Ban className="mr-1" size={14} /> Block
                                                     </Button>
                                                 )}
@@ -176,7 +176,7 @@ const AdminDashboard = () => {
                                     {payments.length === 0 ? (
                                         <TableRow><TableCell colSpan={6} className="text-center py-4">No payment history found.</TableCell></TableRow>
                                     ) : payments.map(p => (
-                                        <TableRow key={p._id}>
+                                        <TableRow key={p.id}>
                                             <TableCell className="font-mono text-xs text-muted-foreground">{p.razorpayOrderId}</TableCell>
                                             <TableCell>
                                                 <div className="font-medium">{p.user?.fullName}</div>

@@ -43,12 +43,33 @@ const Register = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { mutate: registerUser, isLoading } = register;
+  const { mutate: registerUser, status } = register;
+  const isLoading = status === "pending";
+
+  // Map frontend role names to backend Prisma enum values
+  const roleToBackend = {
+    teacher: "jobSeeker",
+    school: "recruiter",
+    parent: "parent",
+    admin: "admin",
+  };
 
   const handleSubmit = (credentials) => {
-    registerUser(credentials, {
+    const mappedCredentials = {
+      ...credentials,
+      role: roleToBackend[credentials.role] || credentials.role,
+    };
+    registerUser(mappedCredentials, {
       onSuccess: (data) => {
-        navigate(`/dashboard/${data?.user?.role}`);
+        // Map backend roles back to frontend routes
+        const roleMap = {
+          jobSeeker: "teacher",
+          recruiter: "school",
+          parent: "parent",
+          admin: "admin",
+        };
+        const effectiveRole = roleMap[data?.user?.role] || data?.user?.role;
+        navigate(`/dashboard/${effectiveRole}`);
       },
       onError: (error) => {
         toast.error("Error!", {

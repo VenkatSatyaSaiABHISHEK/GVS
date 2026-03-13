@@ -1,7 +1,11 @@
 import { refreshToken } from "@/services/authServices";
 import axios from "axios";
 
+// Use relative URL so requests go through the Vite proxy (same-origin).
+// This avoids cross-origin cookie issues between localhost:3000 ↔ localhost:8000.
+// In production, VITE_API_URL can be set and will be used directly.
 const API_URL = import.meta.env.VITE_API_URL;
+const BASE = import.meta.env.PROD ? `${API_URL}/api` : "/api";
 
 // Track refresh token attempts per request
 const MAX_REFRESH_ATTEMPTS = 3;
@@ -38,7 +42,7 @@ const isPublicPath = (url) => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: BASE,
   headers: {
     "Content-Type": "application/json",
   },

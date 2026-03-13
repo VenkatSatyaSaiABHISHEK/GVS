@@ -118,7 +118,7 @@ const PersonalInfo = () => {
 
 PersonalInfo.propTypes = {
   user: PropTypes.shape({
-    _id: PropTypes.string,
+    id: PropTypes.string,
     email: PropTypes.string,
     profilePic: PropTypes.string,
     fullName: PropTypes.string,

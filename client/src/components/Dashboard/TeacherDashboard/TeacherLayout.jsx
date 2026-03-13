@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { getUnreadCount } from '@/services/messageServices';
+import { getMyNotifications } from '@/services/notificationServices';
 import {
   Home,
   Search,
@@ -23,6 +26,21 @@ const TeacherLayout = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { mutate: logoutUser } = logout;
+
+  const { data: unreadData } = useQuery({
+    queryKey: ['teacher-unread-messages'],
+    queryFn: getUnreadCount,
+    refetchInterval: 30000,
+  });
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ['teacher-notifications'],
+    queryFn: getMyNotifications,
+    refetchInterval: 30000,
+  });
+
+  const unreadMessages = unreadData?.unreadCount || 0;
+  const unreadNotifications = notificationsData?.unreadCount || 0;
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard/teacher', active: true },
@@ -140,7 +158,7 @@ const TeacherLayout = ({ children }) => {
             >
               <Mail className="w-6 h-6 text-gray-600" />
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#6C5DD3] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                18
+                {unreadMessages > 99 ? '99+' : unreadMessages}
               </span>
             </Link>
 
@@ -151,7 +169,7 @@ const TeacherLayout = ({ children }) => {
             >
               <Bell className="w-6 h-6 text-gray-600" />
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#6C5DD3] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                52
+                {unreadNotifications > 99 ? '99+' : unreadNotifications}
               </span>
             </Link>
 

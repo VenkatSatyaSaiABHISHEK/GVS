@@ -1,4 +1,4 @@
-import InviteCode from "../models/InviteCode.js";
+import prisma from "../db/db.js";
 
 /**
  * Generates a random invite code and ensures it's unique in the database.
@@ -18,7 +18,9 @@ export const generateRandomCode = async (length = 8) => {
     }
 
     // Check if the code already exists in the database
-    const existingCode = await InviteCode.findOne({ code });
+    const existingCode = await prisma.inviteCode.findFirst({
+      where: { code },
+    });
     if (!existingCode) {
       isUnique = true;
     }

@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axiosInstance';
+import { getSchoolPipeline, scheduleInterview } from '@/services/applicationServices';
 
 const TeacherProfileView = () => {
   const { teacherId } = useParams();
@@ -31,20 +32,33 @@ const TeacherProfileView = () => {
   const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [contactMessage, setContactMessage] = useState('Hi, I would like to discuss an opportunity with you.');
+  const [sendingContact, setSendingContact] = useState(false);
+  const [schedulingInterview, setSchedulingInterview] = useState(false);
+  const [interviewForm, setInterviewForm] = useState({
+    interviewDate: '',
+    interviewTime: '',
+    interviewType: 'online',
+    meetingLink: '',
+    interviewLocation: '',
+    interviewInstructions: '',
+  });
 
   // Fetch teacher data from API
   useEffect(() => {
     const fetchTeacherProfile = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`/api/user/${teacherId}`);
+        const response = await axiosInstance.get(`/user/${teacherId}`);
         
         if (response.data.success) {
           const userData = response.data.user;
           
           // Transform API data to match component structure
           const transformedTeacher = {
-            id: userData._id,
+            id: userData.id,
             name: userData.fullName || 'Teacher',
             subject: userData.primarySubject || 'Subject',
             yearsOfExperience: userData.yoe || '0 years',
@@ -99,7 +113,63 @@ const TeacherProfileView = () => {
   };
 
   const handleContact = () => {
-    toast.info('Opening message dialog...');
+    setShowContactModal(true);
+  };
+
+  const handleSendContact = async () => {
+    if (!teacher?.id) return;
+    if (!contactMessage.trim()) {
+      toast.error('Message is required');
+      return;
+    }
+    try {
+      setSendingContact(true);
+      await axiosInstance.post('/messages/send', {
+        receiverId: teacher.id,
+        message: contactMessage,
+        relatedTo: 'general',
+      });
+      toast.success('Message sent to teacher');
+      setShowContactModal(false);
+      navigate('/dashboard/school/messages');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to send message');
+    } finally {
+      setSendingContact(false);
+    }
+  };
+
+  const handleOpenScheduleModal = () => {
+    setShowInterviewModal(true);
+  };
+
+  const handleScheduleInterview = async () => {
+    if (!teacher?.id) return;
+    if (!interviewForm.interviewDate || !interviewForm.interviewTime) {
+      toast.error('Interview date and time are required');
+      return;
+    }
+
+    try {
+      setSchedulingInterview(true);
+      const pipeline = await getSchoolPipeline();
+      const allApplications = Object.values(pipeline?.pipeline || {}).flat();
+      const teacherApplication = allApplications.find((application) => application?.applicant?.id === teacher.id);
+
+      if (!teacherApplication?.id) {
+        toast.error('No application found for this teacher. Move candidate via Applications first.');
+        return;
+      }
+
+      await scheduleInterview(teacherApplication.id, interviewForm);
+      toast.success('Interview scheduled successfully');
+      setShowInterviewModal(false);
+      navigate('/dashboard/school/interviews');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to schedule interview');
+    } finally {
+      setSchedulingInterview(false);
+    }
   };
 
   const handleShare = () => {
@@ -245,6 +315,7 @@ const TeacherProfileView = () => {
                 </Button>
                 <Button
                   variant="outline"
+                  onClick={handleOpenScheduleModal}
                   className="px-6 py-6 border-2 border-[#6C5CE7] text-[#6C5CE7] hover:bg-[#6C5CE7] hover:text-white"
                 >
                   Schedule Interview
@@ -459,6 +530,52 @@ const TeacherProfileView = () => {
           </div>
         </div>
       </div>
+
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Contact Teacher</h3>
+            <textarea
+              value={contactMessage}
+              onChange={(event) => setContactMessage(event.target.value)}
+              rows={5}
+              className="w-full border rounded-xl px-4 py-3"
+              placeholder="Type your message..."
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowContactModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
+              <button onClick={handleSendContact} disabled={sendingContact} className="px-4 py-2 bg-[#6C5CE7] text-white rounded-lg disabled:opacity-50">
+                {sendingContact ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInterviewModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Schedule Interview</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input type="date" value={interviewForm.interviewDate} onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewDate: event.target.value }))} className="px-4 py-2 border rounded-lg" />
+              <input type="text" value={interviewForm.interviewTime} onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewTime: event.target.value }))} placeholder="e.g. 2:00 PM" className="px-4 py-2 border rounded-lg" />
+              <select value={interviewForm.interviewType} onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewType: event.target.value }))} className="px-4 py-2 border rounded-lg">
+                <option value="online">Online</option>
+                <option value="offline">In-person</option>
+              </select>
+              <input type="text" value={interviewForm.meetingLink} onChange={(event) => setInterviewForm((prev) => ({ ...prev, meetingLink: event.target.value }))} placeholder="Meeting link" className="px-4 py-2 border rounded-lg" />
+              <input type="text" value={interviewForm.interviewLocation} onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewLocation: event.target.value }))} placeholder="Interview location" className="px-4 py-2 border rounded-lg md:col-span-2" />
+              <textarea value={interviewForm.interviewInstructions} onChange={(event) => setInterviewForm((prev) => ({ ...prev, interviewInstructions: event.target.value }))} rows={3} placeholder="Instructions for candidate" className="px-4 py-2 border rounded-lg md:col-span-2" />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowInterviewModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
+              <button onClick={handleScheduleInterview} disabled={schedulingInterview} className="px-4 py-2 bg-[#6C5CE7] text-white rounded-lg disabled:opacity-50">
+                {schedulingInterview ? 'Scheduling...' : 'Schedule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SchoolLayout>
   );
 };

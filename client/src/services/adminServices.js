@@ -1,7 +1,7 @@
 import axiosInstance from "@/lib/axiosInstance";
 
 export const getAdminStats = async () => {
-    const { data } = await axiosInstance.get("/admin/stats");
+    const { data } = await axiosInstance.get("/admin/dashboard/stats");
     return data;
 };
 
@@ -13,16 +13,16 @@ export const getAllUsers = async (role = null) => {
 };
 
 export const verifyUser = async (id, isVerified) => {
-    const { data } = await axiosInstance.patch(`/admin/users/${id}/verify`, { isVerified });
+    const { data } = await axiosInstance.patch(`/admin/users/${id}/status`, { isVerified });
     return data;
 };
 
 export const blockUser = async (id, isBlocked) => {
-    const { data } = await axiosInstance.patch(`/admin/users/${id}/block`, { isBlocked });
+    const { data } = await axiosInstance.patch(`/admin/users/${id}/status`, { isBlocked });
     return data;
 };
 
 export const getAllPayments = async () => {
-    const { data } = await axiosInstance.get("/admin/payments");
-    return data;
+    // Payments endpoint not yet implemented
+    return { payments: [] };
 };

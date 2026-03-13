@@ -31,7 +31,7 @@ const InstitutionProfile = () => {
     const mutation = useMutation({
         mutationFn: async (data) => {
             if (editingInstitution) {
-                return updateInstitution(editingInstitution._id, data);
+                return updateInstitution(editingInstitution.id, data);
             } else {
                 return createInstitution(data);
             }
@@ -99,7 +99,7 @@ const InstitutionProfile = () => {
                     </Card>
                 ) : (
                     institutions.map((institution) => (
-                        <Card key={institution._id} className="relative overflow-hidden hover:shadow-md transition-shadow">
+                        <Card key={institution.id} className="relative overflow-hidden hover:shadow-md transition-shadow">
                             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                                 <Avatar className="h-16 w-16 border-2 border-primary/10">
                                     <AvatarImage src={institution.logo} />

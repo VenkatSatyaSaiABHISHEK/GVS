@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import axiosInstance from '@/lib/axiosInstance';
+import { formatLocation } from '@/utils/formatLocation';
 import SchoolLayout from './SchoolLayout';
 import { 
   Users, 
@@ -53,13 +54,16 @@ const Applications = () => {
   const applications = applicationsData?.applications || [];
 
   // Get unique jobs from applications
-  const uniqueJobs = [...new Map(applications.map(app => [app.job?._id, app.job])).values()].filter(Boolean);
+  const uniqueJobs = [...new Map(applications.map(app => [app.job?.id, app.job])).values()].filter(Boolean);
 
   const tabs = [
     { id: 'all', label: 'All Applications', count: applications.length },
     { id: 'applied', label: 'New', count: applications.filter(app => app.status === 'applied').length },
-    { id: 'reviewing', label: 'Reviewing', count: applications.filter(app => app.status === 'reviewing').length },
-    { id: 'interview', label: 'Interview', count: applications.filter(app => app.status === 'interview').length },
+    { id: 'application_viewed', label: 'Viewed', count: applications.filter(app => app.status === 'application_viewed').length },
+    { id: 'shortlisted', label: 'Shortlisted', count: applications.filter(app => app.status === 'shortlisted').length },
+    { id: 'interview_scheduled', label: 'Interview Scheduled', count: applications.filter(app => app.status === 'interview_scheduled').length },
+    { id: 'interview_completed', label: 'Interview Completed', count: applications.filter(app => app.status === 'interview_completed').length },
+    { id: 'offer_sent', label: 'Offer Sent', count: applications.filter(app => app.status === 'offer_sent').length },
     { id: 'hired', label: 'Hired', count: applications.filter(app => app.status === 'hired').length },
     { id: 'rejected', label: 'Rejected', count: applications.filter(app => app.status === 'rejected').length }
   ];
@@ -68,7 +72,7 @@ const Applications = () => {
     const matchesTab = activeTab === 'all' || app.status === activeTab;
     const matchesSearch = app.applicant?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          app.job?.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesJob = !selectedJob || app.job?._id === selectedJob;
+    const matchesJob = !selectedJob || app.job?.id === selectedJob;
     
     return matchesTab && matchesSearch && matchesJob;
   });
@@ -76,8 +80,11 @@ const Applications = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'applied': return 'bg-yellow-100 text-yellow-800';
-      case 'reviewing': return 'bg-blue-100 text-blue-800';
-      case 'interview': return 'bg-purple-100 text-purple-800';
+      case 'application_viewed': return 'bg-blue-100 text-blue-800';
+      case 'shortlisted': return 'bg-indigo-100 text-indigo-800';
+      case 'interview_scheduled': return 'bg-purple-100 text-purple-800';
+      case 'interview_completed': return 'bg-fuchsia-100 text-fuchsia-800';
+      case 'offer_sent': return 'bg-orange-100 text-orange-800';
       case 'hired': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -87,12 +94,30 @@ const Applications = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'applied': return <Clock className="w-4 h-4" />;
-      case 'reviewing': return <Eye className="w-4 h-4" />;
-      case 'interview': return <Users className="w-4 h-4" />;
+      case 'application_viewed': return <Eye className="w-4 h-4" />;
+      case 'shortlisted': return <Users className="w-4 h-4" />;
+      case 'interview_scheduled': return <Calendar className="w-4 h-4" />;
+      case 'interview_completed': return <CheckCircle className="w-4 h-4" />;
+      case 'offer_sent': return <FileText className="w-4 h-4" />;
       case 'hired': return <CheckCircle className="w-4 h-4" />;
       case 'rejected': return <XCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
+  };
+
+  const getNextStage = (status) => {
+    const stages = [
+      'applied',
+      'application_viewed',
+      'shortlisted',
+      'interview_scheduled',
+      'interview_completed',
+      'selected',
+      'offer_sent',
+      'hired',
+    ];
+    const index = stages.indexOf(status);
+    return index >= 0 && index < stages.length - 1 ? stages[index + 1] : null;
   };
 
   const handleStatusChange = async (applicationId, newStatus) => {
@@ -165,7 +190,7 @@ const Applications = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">In Review</p>
-                <p className="text-2xl font-bold text-blue-600">{applications.filter(app => app.status === 'reviewing').length}</p>
+                <p className="text-2xl font-bold text-blue-600">{applications.filter(app => app.status === 'application_viewed' || app.status === 'shortlisted').length}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <Eye className="w-6 h-6 text-blue-600" />
@@ -207,7 +232,7 @@ const Applications = () => {
             >
               <option value="">All Job Positions</option>
               {uniqueJobs.map(job => (
-                <option key={job._id} value={job._id}>{job.title}</option>
+                <option key={job.id} value={job.id}>{job.title}</option>
               ))}
             </select>
 
@@ -256,7 +281,7 @@ const Applications = () => {
             ) : (
               <div className="space-y-4">
                 {filteredApplications.map(application => (
-                  <div key={application._id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-all">
+                  <div key={application.id} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-all">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-[#6C5CE7] to-[#8B7FE8] rounded-full flex items-center justify-center">
@@ -281,14 +306,14 @@ const Applications = () => {
                             </div>
                             <div className="flex items-center space-x-1">
                               <MapPin className="w-4 h-4" />
-                              <span>{application.applicant?.city || 'N/A'}, {application.applicant?.state || 'N/A'}</span>
+                              <span>{formatLocation({ city: application.applicant?.city, state: application.applicant?.state })}</span>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
                             <div>
                               <span className="text-gray-500">Experience:</span>
-                              <p className="font-medium">{application.applicant?.experience || 'N/A'}</p>
+                              <p className="font-medium">{application.applicant?.yoe || 'N/A'}</p>
                             </div>
                             <div>
                               <span className="text-gray-500">Qualification:</span>
@@ -341,7 +366,7 @@ const Applications = () => {
                     <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                       <div className="flex space-x-3">
                         <button 
-                          onClick={() => window.location.href = `/dashboard/school/teacher/${application.applicant?._id}`}
+                          onClick={() => window.location.href = `/dashboard/school/teacher/${application.applicant?.id}`}
                           className="px-4 py-2 bg-[#6C5CE7] text-white rounded-lg hover:bg-[#5A4FCF] transition-colors text-sm font-medium"
                         >
                           View Full Profile
@@ -349,50 +374,26 @@ const Applications = () => {
                         {application.status === 'applied' && (
                           <>
                             <button 
-                              onClick={() => handleStatusChange(application._id, 'reviewing')}
+                              onClick={() => handleStatusChange(application.id, 'application_viewed')}
                               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                             >
-                              Review
+                              Mark Viewed
                             </button>
                             <button 
-                              onClick={() => handleStatusChange(application._id, 'rejected')}
+                              onClick={() => handleStatusChange(application.id, 'rejected')}
                               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                             >
                               Reject
                             </button>
                           </>
                         )}
-                        {application.status === 'reviewing' && (
-                          <>
-                            <button 
-                              onClick={() => handleStatusChange(application._id, 'interview')}
-                              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                            >
-                              Schedule Interview
-                            </button>
-                            <button 
-                              onClick={() => handleStatusChange(application._id, 'rejected')}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                        {application.status === 'interview' && (
-                          <>
-                            <button 
-                              onClick={() => handleStatusChange(application._id, 'hired')}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                            >
-                              Hire
-                            </button>
-                            <button 
-                              onClick={() => handleStatusChange(application._id, 'rejected')}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                            >
-                              Reject
-                            </button>
-                          </>
+                        {application.status !== 'hired' && application.status !== 'rejected' && getNextStage(application.status) && (
+                          <button
+                            onClick={() => handleStatusChange(application.id, getNextStage(application.status))}
+                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                          >
+                            Move to Next Stage
+                          </button>
                         )}
                       </div>
                     </div>

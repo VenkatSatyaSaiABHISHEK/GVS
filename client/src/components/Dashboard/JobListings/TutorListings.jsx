@@ -45,7 +45,7 @@ const TutorListings = () => {
     const handleRequestSubmit = () => {
         if (!selectedTutor) return;
         mutation.mutate({
-            teacherId: selectedTutor._id,
+            teacherId: selectedTutor.id,
             subject: searchTerm || "General",
             message: requestMessage,
             preferredMode: "both" // Can be refined to use parent preferences
@@ -87,7 +87,7 @@ const TutorListings = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {data?.tutors?.map((tutor) => (
-                        <Card key={tutor._id} className="overflow-hidden hover:shadow-lg transition-shadow border-2 hover:border-primary/20">
+                        <Card key={tutor.id} className="overflow-hidden hover:shadow-lg transition-shadow border-2 hover:border-primary/20">
                             <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                                 <Avatar className="h-20 w-20 border-2 border-primary/10">
                                     <AvatarImage src={tutor.profilePic} />
@@ -134,7 +134,7 @@ const TutorListings = () => {
                                 </div>
                             </CardContent>
                             <CardFooter className="bg-muted/30 pt-4 flex gap-2">
-                                <Dialog open={selectedTutor?._id === tutor._id} onOpenChange={(open) => !open && setSelectedTutor(null)}>
+                                <Dialog open={selectedTutor?.id === tutor.id} onOpenChange={(open) => !open && setSelectedTutor(null)}>
                                     <DialogTrigger asChild>
                                         <Button className="flex-1 gap-2" size="sm" onClick={() => setSelectedTutor(tutor)}>
                                             <Send size={14} /> Send Request

@@ -8,7 +8,7 @@ const Education = ({ education, onDelete, onUpdate, onAdd }) => {
     <div className="">
       {education.map((edu) => (
         <div
-          key={edu._id}
+          key={edu.id}
           className="mb-2 bg-muted shadow-2xl border hover:bg-muted/50 py-4"
         >
           <div className="grid grid-cols-2">
@@ -24,7 +24,7 @@ const Education = ({ education, onDelete, onUpdate, onAdd }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onDelete(edu?._id)}
+                onClick={() => onDelete(edu?.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -43,7 +43,7 @@ const Education = ({ education, onDelete, onUpdate, onAdd }) => {
 Education.propTypes = {
   education: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       institution: PropTypes.string.isRequired,
       degree: PropTypes.string.isRequired,
       yearOfGraduation: PropTypes.string.isRequired,

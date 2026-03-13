@@ -186,76 +186,6 @@ router.get("/current-user", fetchCurrentUser);
 
 /**
  * @swagger
- * /api/user/{userId}:
- *   get:
- *     summary: Get a user's profile by ID
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Successfully fetched user profile
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: "User profile fetched successfully!"
- *                 user:
- *                   type: object
- *                   properties:
- *                     email:
- *                       type: string
- *                     fullName:
- *                       type: string
- *                     bio:
- *                       type: string
- *                     contact:
- *                       type: string
- *                     skills:
- *                       type: array
- *                       items:
- *                         type: string
- *                     projects:
- *                       type: array
- *                       items:
- *                         type: object
- *                     experience:
- *                       type: array
- *                       items:
- *                         type: object
- *                     education:
- *                       type: array
- *                       items:
- *                         type: object
- *                     bookmarkedJobs:
- *                       type: array
- *                       items:
- *                         type: object
- *       401:
- *         description: Unauthorized - Invalid or missing token
- *       403:
- *         description: Forbidden - User doesn't have required permissions
- *       404:
- *         description: User not found
- *       500:
- *         description: Server error
- */
-router.get("/:userId", authorize("recruiter"), getUserProfile);
-
-/**
- * @swagger
  * /api/user/auth-update:
  *   put:
  *     summary: Update user's authentication data
@@ -1119,5 +1049,32 @@ router.put("/update-project/:projectId", updateProject);
  *         description: Server error
  */
 router.delete("/delete-project/:projectId", removeProject);
+
+/**
+ * @swagger
+ * /api/user/{userId}:
+ *   get:
+ *     summary: Get a user's profile by ID
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully fetched user profile
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: User not found
+ */
+// IMPORTANT: This wildcard route must be LAST to avoid catching named routes like /get-educations
+router.get("/:userId", authorize("recruiter"), getUserProfile);
 
 export default router;

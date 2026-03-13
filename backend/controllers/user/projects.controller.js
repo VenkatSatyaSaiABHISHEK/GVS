@@ -1,101 +1,76 @@
-import { Project, User } from "../../models/User.js";
+import prisma from "../../db/db.js";
 
-// Get all projects of the user
 export const getProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ userId: req.user.id });
-    if (!projects || projects.length === 0) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Projects not found" });
-    }
-    res.status(200).json({ success: true, projects });
+    const projects = await prisma.project.findMany({
+      where: { userId: req.user.id },
+    });
+    res.status(200).json({ success: true, projects: projects || [] });
   } catch (error) {
-    console.log(error);
     res.status(500).json({ success: false, message: "Failed to get projects" });
   }
 };
 
-// Add a new project
 export const addProject = async (req, res) => {
-  const projectData = req.body;
   try {
-    // Create a new project
-    const newProject = new Project(projectData);
-    await newProject.save();
+    const data = { ...req.body, userId: req.user.id };
+    if (data.endDate) data.endDate = new Date(data.endDate);
 
-    // Add project reference to the user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { projects: newProject._id } },
-      { new: true }
-    ).populate("projects");
+    await prisma.project.create({ data });
+
+    const projects = await prisma.project.findMany({
+      where: { userId: req.user.id },
+    });
 
     res.status(201).json({
       success: true,
       message: "Project added successfully!",
-      projects: user.projects,
+      projects,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to add project" });
   }
 };
 
-// Update an existing project
 export const updateProject = async (req, res) => {
   const { projectId } = req.params;
-  const updatedData = req.body;
-  console.log("request received");
   try {
-    const updatedProject = await Project.findByIdAndUpdate(
-      projectId,
-      { $set: updatedData },
-      { new: true, upsert: true }
-    );
+    const data = { ...req.body };
+    if (data.endDate) data.endDate = new Date(data.endDate);
 
-    if (!updatedProject) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Project not found" });
-    }
-    console.log("updated data", updatedProject);
+    const updatedProject = await prisma.project.update({
+      where: { id: projectId },
+      data,
+    });
+
     res.status(200).json({
       success: true,
       message: "Project updated successfully!",
       project: updatedProject,
     });
   } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update project" });
+    if (error.code === "P2025") {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+    res.status(500).json({ success: false, message: "Failed to update project" });
   }
 };
 
-// Remove a project
 export const removeProject = async (req, res) => {
   const { projectId } = req.params;
-
   try {
-    await Project.findByIdAndDelete(projectId);
+    await prisma.project.delete({ where: { id: projectId } });
 
-    // Remove project reference from user
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $pull: { projects: projectId } },
-      { new: true }
-    );
+    const projects = await prisma.project.findMany({
+      where: { userId: req.user.id },
+    });
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Project removed successfully!",
-        projects: user.projects,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Project removed successfully!",
+      projects,
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to remove project" });
+    res.status(500).json({ success: false, message: "Failed to remove project" });
   }
 };

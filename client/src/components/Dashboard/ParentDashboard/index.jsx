@@ -14,8 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getParentDashboardData, getTutors } from "@/services/tuitionServices";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 // Mock chart data (this can stay as it's for visualization)
 const chartData = [
@@ -37,16 +36,20 @@ const ParentDashboard = () => {
   // Fetch dashboard data
   const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
     queryKey: ["parent-dashboard"],
-    queryFn: getParentDashboardData
+    queryFn: getParentDashboardData,
+    retry: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   // Fetch recommended teachers
   const { data: teachersResponse, isLoading: isTeachersLoading } = useQuery({
     queryKey: ["recommended-teachers"],
-    queryFn: () => getTutors({ limit: 3 })
+    queryFn: () => getTutors({ limit: 3 }),
+    retry: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const recommendedTeachers = teachersResponse?.data?.slice(0, 3) || [];
+  const recommendedTeachers = teachersResponse?.tutors?.slice(0, 3) || teachersResponse?.data?.slice(0, 3) || [];
   
   // Create stats data from API response
   const statsData = [
@@ -77,18 +80,8 @@ const ParentDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        {/* Sidebar */}
-        <ParentSidebar />
-
-        {/* Main Content Area */}
-        <div className="ml-[260px] flex-1">
-          {/* Top Navbar */}
-          <ParentTopbar title="Dashboard" searchPlaceholder="Search teachers, subjects..." />
-
-          {/* Dashboard Content */}
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             {/* Stats Cards - Exact match to reference */}
             <div className="grid grid-cols-4 gap-5 mb-6">
               {statsData.map((stat, index) => (
@@ -174,22 +167,7 @@ const ParentDashboard = () => {
                         </div>
                       ))
                     ) : (
-                      [
-                        { text: "Your request has been accepted by 3 Teachers", time: "1 day ago" },
-                        { text: "Your request has been accepted by 3 Teachers", time: "1 day ago" },
-                        { text: "Your request has been accepted by 3 Teachers", time: "1 day ago" },
-                        { text: "Your request has been accepted by 3 Teachers", time: "1 day ago" },
-                      ].map((activity, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          <div className="w-8 h-8 bg-[#5B3DF5] rounded-full flex items-center justify-center flex-shrink-0">
-                            <div className="w-2 h-2 bg-white rounded-full"></div>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-[#111827]">{activity.text}</p>
-                            <p className="text-xs text-[#6B7280] mt-1">{activity.time}</p>
-                          </div>
-                        </div>
-                      ))
+                      <div className="text-sm text-[#6B7280]">No recent activity yet.</div>
                     )}
                   </div>
                 </div>
@@ -350,92 +328,7 @@ const ParentDashboard = () => {
                         </div>
                       ))
                     ) : (
-                      // Fallback to mock data if no teachers found
-                      [
-                        {
-                          id: 1,
-                          name: "Rahul Sharma",
-                          subject: "Physics Teacher",
-                          experience: "5 Years Experience",
-                          rating: 4.6,
-                          location: "Hyderabad",
-                          mode: "Online + Offline",
-                          fee: "₹800/hour",
-                          description: "Expert in JEE and NEET preparation with proven track record"
-                        },
-                        {
-                          id: 2,
-                          name: "Priya Singh",
-                          subject: "Mathematics Teacher",
-                          experience: "3 Years Experience",
-                          rating: 4.8,
-                          location: "Mumbai",
-                          mode: "Online",
-                          fee: "₹600/hour",
-                          description: "Specialized in advanced mathematics and competitive exams"
-                        },
-                        {
-                          id: 3,
-                          name: "Amit Kumar",
-                          subject: "Chemistry Teacher",
-                          experience: "7 Years Experience",
-                          rating: 4.7,
-                          location: "Delhi",
-                          mode: "Offline",
-                          fee: "₹900/hour",
-                          description: "Organic chemistry specialist with excellent results"
-                        }
-                      ].map((teacher) => (
-                        <div key={teacher.id} className="border border-[#E5E7EB] rounded-2xl p-4 hover:shadow-lg transition-all">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <div className="w-12 h-12 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full flex items-center justify-center">
-                              <User className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-[#111827] text-sm">{teacher.name}</h4>
-                              <p className="text-xs text-[#6B7280]">{teacher.subject}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2 mb-4">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#6B7280]">Experience:</span>
-                              <span className="font-medium">{teacher.experience}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#6B7280]">Rating:</span>
-                              <div className="flex items-center space-x-1">
-                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="font-medium">{teacher.rating}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-[#6B7280]">Location:</span>
-                              <span className="font-medium">{teacher.location}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-bold text-[#5B3DF5]">{teacher.fee}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              teacher.mode === 'Online' ? 'bg-blue-100 text-blue-600' :
-                              teacher.mode === 'Offline' ? 'bg-green-100 text-green-600' :
-                              'bg-purple-100 text-purple-600'
-                            }`}>
-                              {teacher.mode === 'Online + Offline' ? 'FULLTIME' : teacher.mode.toUpperCase()}
-                            </span>
-                          </div>
-                          
-                          <div className="flex space-x-2">
-                            <button className="flex-1 bg-[#5B3DF5] text-white py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-[#4B2BBF] transition-colors">
-                              View Profile
-                            </button>
-                            <button className="flex-1 border border-[#E5E7EB] text-[#6B7280] py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-gray-50 transition-colors">
-                              Book Demo
-                            </button>
-                          </div>
-                        </div>
-                      ))
+                      <div className="col-span-3 text-sm text-[#6B7280]">No recommended teachers yet.</div>
                     )}
                   </div>
                 </div>
@@ -468,9 +361,7 @@ const ParentDashboard = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

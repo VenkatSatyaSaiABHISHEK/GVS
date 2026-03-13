@@ -10,7 +10,7 @@ const Experience = ({ experience, onDelete, onUpdate, onAdd }) => {
       {experience.length > 0 ? (
         experience?.map((exp) => (
           <div
-            key={exp._id}
+            key={exp.id}
             className="mb-2 bg-muted shadow-sm border hover:bg-muted/50 py-4"
           >
             <div className="grid grid-cols-2">
@@ -35,7 +35,7 @@ const Experience = ({ experience, onDelete, onUpdate, onAdd }) => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDelete(exp?._id)}
+                  onClick={() => onDelete(exp?.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -59,7 +59,7 @@ const Experience = ({ experience, onDelete, onUpdate, onAdd }) => {
 Experience.propTypes = {
   experience: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       jobTitle: PropTypes.string.isRequired,
       employer: PropTypes.string.isRequired,
       startDate: PropTypes.string.isRequired,

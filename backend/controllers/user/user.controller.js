@@ -1,99 +1,89 @@
 import fs from "fs/promises";
-import mongoose from "mongoose";
-import Job from "../../models/Job.js";
-import { User } from "../../models/User.js";
+import prisma from "../../db/db.js";
 import { createError } from "../../utils/error.js";
 import { upload } from "../../config/multer.js";
-import { uploadToCloudinary } from "../../config/cloudinary.js";
+import { uploadToCloudinary, isCloudinaryConfigured } from "../../config/cloudinary.js";
 
-// Get User Profile (public route)
 export const getUserProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userId)
-      .select("-password")
-      .populate("projects")
-      .populate("experience")
-      .populate("education")
-      .populate("bookmarkedJobs")
-      .populate("company", "name logo");
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.userId },
+      include: {
+        projects: true,
+        experience: true,
+        education: true,
+        bookmarkedJobs: { include: { job: true } },
+      },
+    });
 
     if (!user) return next(createError(404, "User not found!"));
+
+    const { password, ...userWithoutPassword } = user;
+    // Transform bookmarkedJobs to match old format
+    userWithoutPassword.bookmarkedJobs = user.bookmarkedJobs.map((bj) => bj.job);
+
     res.status(200).json({
       success: true,
       message: "User profile fetched successfully!",
-      user,
+      user: userWithoutPassword,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Fetch Current Protected
 export const fetchCurrentUser = async (req, res, next) => {
   try {
-    // Check if req.user exists
-    if (!req.user) {
-      console.error("req.user is null or undefined");
-      return next(createError(401, "User not authenticated"));
-    }
+    if (!req.user) return next(createError(401, "User not authenticated"));
 
-    // The user ID is attached to the request by the authentication middleware
-    const userId = req.user.id || req.user._id;
+    const userId = req.user.id;
+    if (!userId) return next(createError(401, "Invalid user data"));
 
-    if (!userId) {
-      console.error("User ID not found in req.user:", req.user);
-      return next(createError(401, "Invalid user data"));
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        projects: true,
+        experience: true,
+        education: true,
+        bookmarkedJobs: { include: { job: true } },
+      },
+    });
 
-    // Fetch the user from the database, excluding the password
-    const user = await User.findById(userId)
-      .select("-password")
-      .populate("projects")
-      .populate("experience")
-      .populate("education")
-      .populate("bookmarkedJobs")
-      .populate("companies", "name logo");
+    if (!user) return next(createError(404, "User not found"));
 
-    if (!user) {
-      return next(createError(404, "User not found"));
-    }
+    const { password, ...userWithoutPassword } = user;
+    userWithoutPassword.bookmarkedJobs = user.bookmarkedJobs.map((bj) => bj.job);
 
-    // Send the user data
     res.status(200).json({
       success: true,
       message: "Current user data fetched successfully!",
-      user,
+      user: userWithoutPassword,
     });
   } catch (error) {
     console.error("Error fetching current user:", error);
     next(createError(500, "Error fetching user data"));
   }
 };
-// Update User Profile
+
 export const updateUserAuth = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select("-password")
-      .populate("projects")
-      .populate("experience")
-      .populate("education")
-      .populate("bookmarkedJobs")
-      .populate("companies", "name logo");
-    if (!user) return next(createError(404, "User not found!"));
+    const updateData = {};
+    if (req.body.email) updateData.email = req.body.email;
+    if (req.body.isVerified !== undefined) updateData.isVerified = req.body.isVerified;
 
-    const updatedAuthData = {
-      email: req.body.email || user.email,
-      role: req.body.role || user.role,
-      isVerified: req.body.isVerified || user.isVerified,
-      inviteCodeUsed: req.body.inviteCodeUsed || user.inviteCodeUsed,
-    };
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData,
+      include: {
+        projects: true,
+        experience: true,
+        education: true,
+        bookmarkedJobs: { include: { job: true } },
+      },
+    });
 
-    // Update user auth fields
-    Object.assign(user, updatedAuthData);
-    const updatedUser = await user.save();
-
-    // Remove sensitive information before sending response
-    const { password, ...userWithoutPassword } = updatedUser.toObject();
+    const { password, ...userWithoutPassword } = user;
+    userWithoutPassword.bookmarkedJobs = user.bookmarkedJobs.map((bj) => bj.job);
 
     res.status(200).json({
       success: true,
@@ -105,65 +95,69 @@ export const updateUserAuth = async (req, res, next) => {
   }
 };
 
-// Update User Profile
 export const updateProfile = async (req, res, next) => {
   const userId = req.user.id;
-  console.log("updating profile", req.user.id);
   try {
-    const user = await User.findById(userId)
-      .populate("projects")
-      .populate("experience")
-      .populate("education")
-      .populate("bookmarkedJobs")
-      .populate("companies", "name logo");
+    const updateData = {};
+    const allowedFields = [
+      "profilePic", "fullName", "bio", "contact", "contactEmail",
+      "designation", "address", "skills", "profileLinks", "yoe",
+      // Teacher-specific
+      "primarySubject", "secondarySubjects", "city", "state",
+      "qualification", "hourlyRate", "availableForHire", "specializations",
+      "languages", "teachingMode", "achievements",
+      // School-specific
+      "institutionType", "boardAffiliation", "yearEstablished",
+      "institutionSize", "hrContactPerson", "whatsapp", "facilities",
+      "subjectsHiring", "requiredQualifications", "minimumExperience",
+      "currentlyHiring", "schoolRegistrationNumber",
+      // Parent-specific
+      "childGrade", "childName", "preferredSubjects", "preferredTeachingMode",
+    ];
 
-    if (!user) return next(createError(404, "User not found!"));
+    // Fields that must be String[] in Prisma schema
+    const arrayFields = [
+      "secondarySubjects", "specializations", "languages", "achievements",
+      "facilities", "subjectsHiring", "preferredSubjects",
+    ];
 
-    const updatedProfileData = {
-      profilePic: req.body.profilePic || user.profilePic,
-      fullName: req.body.fullName || user.fullName,
-      bio: req.body.bio || user.bio,
-      contact: req.body.contact || user.contact,
-      contactEmail: req.body.contactEmail || user.contactEmail,
-      designation: req.body.designation || user.designation,
-      address: req.body.address || user.address,
-      skills: req.body.skills || user.skills,
-      profileLinks: req.body.profileLinks || user.profileLinks,
-      company: req.body.company || user.company,
-      yoe: req.body.yoe || user.yoe,
-      // Teacher-specific fields
-      primarySubject: req.body.primarySubject || user.primarySubject,
-      secondarySubjects: req.body.secondarySubjects || user.secondarySubjects,
-      city: req.body.city || user.city,
-      state: req.body.state || user.state,
-      qualification: req.body.qualification || user.qualification,
-      hourlyRate: req.body.hourlyRate || user.hourlyRate,
-      availableForHire: req.body.availableForHire !== undefined ? req.body.availableForHire : user.availableForHire,
-      specializations: req.body.specializations || user.specializations,
-      languages: req.body.languages || user.languages,
-      teachingMode: req.body.teachingMode || user.teachingMode,
-      achievements: req.body.achievements || user.achievements,
-    };
-
-    // Update password if provided
-    if (req.body.password) {
-      const bcrypt = await import('bcryptjs');
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        let value = req.body[field];
+        // Convert comma-separated strings to arrays for String[] fields
+        if (arrayFields.includes(field) && typeof value === "string") {
+          value = value.split(",").map((s) => s.trim()).filter(Boolean);
+        }
+        updateData[field] = value;
+      }
     }
 
-    // Update user profile fields
-    Object.assign(user, updatedProfileData);
-    const updatedUser = await user.save();
+    // Handle password change
+    if (req.body.password) {
+      const bcryptModule = await import("bcryptjs");
+      const bcrypt = bcryptModule.default || bcryptModule;
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(req.body.password, salt);
+    }
 
-    // Remove password from response
-    const userResponse = updatedUser.toObject();
-    delete userResponse.password;
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      include: {
+        projects: true,
+        experience: true,
+        education: true,
+        bookmarkedJobs: { include: { job: true } },
+      },
+    });
+
+    const { password, ...userWithoutPassword } = user;
+    userWithoutPassword.bookmarkedJobs = user.bookmarkedJobs.map((bj) => bj.job);
 
     res.status(200).json({
       success: true,
       message: "User profile updated successfully!",
-      updatedUser: userResponse,
+      updatedUser: userWithoutPassword,
     });
   } catch (error) {
     console.log("Error updating profile", error);
@@ -171,80 +165,79 @@ export const updateProfile = async (req, res, next) => {
   }
 };
 
-// Update profile
 export const updateProfilePic = [
   upload.single("profilePic"),
   async (req, res, next) => {
     try {
-      if (!req.file) {
-        return next(createError(400, "No file uploaded"));
+      if (!req.file) return next(createError(400, "No file uploaded"));
+
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      if (!user) return next(createError(404, "User not found!"));
+
+      let profilePicUrl;
+      let shouldDeleteTempFile = false;
+
+      if (isCloudinaryConfigured) {
+        profilePicUrl = await uploadToCloudinary(req.file);
+        shouldDeleteTempFile = true;
+      } else {
+        profilePicUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
       }
 
-      const user = await User.findById(req.user.id);
-      if (!user) {
-        return next(createError(404, "User not found!"));
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { profilePic: profilePicUrl },
+      });
+
+      if (shouldDeleteTempFile) {
+        await fs.unlink(req.file.path);
       }
-
-      // Upload to Cloudinary and get URL
-      const profilePicUrl = await uploadToCloudinary(req.file);
-
-      // Update user's profile picture URL
-      user.profilePic = profilePicUrl;
-      await user.save();
-
-      // Clean up uploaded file
-      await fs.unlink(req.file.path);
 
       res.status(200).json({
         success: true,
-        message: "Profile picture updated successfully!",
+        message: isCloudinaryConfigured
+          ? "Profile picture updated successfully!"
+          : "Profile picture uploaded locally (Cloudinary not configured).",
         profilePic: profilePicUrl,
       });
     } catch (error) {
-      // Clean up uploaded file if it exists
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(console.error);
-      }
+      if (req.file) await fs.unlink(req.file.path).catch(console.error);
       next(error);
     }
   },
 ];
 
-// Delete User Account
 export const deleteUserAccount = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.user.id);
-    if (!user) return next(createError(404, "User not found!"));
-
-    res
-      .status(200)
-      .json({ success: true, message: "User account deleted successfully." });
+    await prisma.user.delete({ where: { id: req.user.id } });
+    res.status(200).json({ success: true, message: "User account deleted successfully." });
   } catch (error) {
+    if (error.code === "P2025") return next(createError(404, "User not found!"));
     next(error);
   }
 };
 
-// Change User Password (only after logged in from settings)
 export const changePassword = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) return next(createError(404, "User not found!"));
 
     const { currentPassword, newPassword } = req.body;
+    const bcryptModule = await import("bcryptjs");
+    const bcrypt = bcryptModule.default || bcryptModule;
 
-    // Check if the current password is correct
-    const isMatch = await user.matchPassword(currentPassword);
-    if (!isMatch)
-      return next(createError(400, "Current password is incorrect"));
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return next(createError(400, "Current password is incorrect"));
 
-    // Set the new password
-    user.password = newPassword;
-    await user.save();
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    res.status(200).json({
-      success: true,
-      message: "Password changed successfully",
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
     });
+
+    res.status(200).json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     next(error);
   }
@@ -252,45 +245,38 @@ export const changePassword = async (req, res, next) => {
 
 export const toggleBookmarkJob = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).populate("bookmarkedJobs");
-    console.log("User found:", user ? "Yes" : "No");
-    if (!user) return next(createError(404, "User not found!"));
-
+    const userId = req.user.id;
     const jobId = req.params.jobId;
-    console.log("Job ID from params:", jobId);
 
-    const job = await Job.findById(jobId);
-    console.log("Job found:", job ? "Yes" : "No");
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) return next(createError(404, "Job not found!"));
 
-    // Convert jobId to ObjectId for accurate comparison
-    const jobObjectId = new mongoose.Types.ObjectId(jobId);
+    // Check if already bookmarked
+    const existing = await prisma.userBookmarkedJob.findUnique({
+      where: { userId_jobId: { userId, jobId } },
+    });
 
-    console.log("jobObjectId", jobObjectId);
-    const isBookmarked = user.bookmarkedJobs.some((id) =>
-      id.equals(jobObjectId)
-    );
-    console.log("Is job already bookmarked?", isBookmarked);
-
-    if (isBookmarked) {
-      console.log("Removing bookmark");
-      user.bookmarkedJobs = user.bookmarkedJobs.filter(
-        (id) => !id.equals(jobObjectId)
-      );
+    if (existing) {
+      // Remove bookmark
+      await prisma.userBookmarkedJob.delete({
+        where: { userId_jobId: { userId, jobId } },
+      });
     } else {
-      console.log("Adding bookmark");
-      user.bookmarkedJobs.push(jobObjectId);
+      // Add bookmark
+      await prisma.userBookmarkedJob.create({
+        data: { userId, jobId },
+      });
     }
 
-    await user.save();
-    console.log("User saved successfully");
+    const bookmarks = await prisma.userBookmarkedJob.findMany({
+      where: { userId },
+      include: { job: true },
+    });
 
     res.status(200).json({
       success: true,
-      message: isBookmarked
-        ? "Job unbookmarked successfully."
-        : "Job bookmarked successfully.",
-      bookmarkedJobs: user.bookmarkedJobs,
+      message: existing ? "Job unbookmarked successfully." : "Job bookmarked successfully.",
+      bookmarkedJobs: bookmarks.map((b) => b.job),
     });
   } catch (error) {
     console.error("Error in toggleBookmarkJob:", error);

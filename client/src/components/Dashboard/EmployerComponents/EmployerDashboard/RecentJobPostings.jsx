@@ -20,7 +20,7 @@ const RecentJobPostings = ({ recentJobs }) => {
   const isBookmarked = (jobId) => {
     return (
       user?.bookmarkedJobs?.some(
-        (bookmarkedJob) => bookmarkedJob?._id === jobId
+        (bookmarkedJob) => bookmarkedJob?.id === jobId
       ) || false
     );
   };
@@ -33,10 +33,10 @@ const RecentJobPostings = ({ recentJobs }) => {
       <CardContent>
         <ul className="grid grid-flow-row-dense gap-2">
           {recentJobs?.map((job) => (
-            <div key={job._id}>
+            <div key={job.id}>
               <li
                 className="flex bg-muted rounded-3xl py-4 px-6 border items-center justify-between cursor-pointer hover:bg-muted/20"
-                onClick={() => handleSetOpen(job._id, true)}
+                onClick={() => handleSetOpen(job.id, true)}
               >
                 <div>
                   <p className="font-medium">{job.title}</p>
@@ -51,10 +51,10 @@ const RecentJobPostings = ({ recentJobs }) => {
                 <Badge variant="default">Open</Badge>
               </li>
               <ApplicantsDrawer
-                open={openStates[job?._id] || false}
-                setOpen={(isOpen) => handleSetOpen(job._id, isOpen)}
+                open={openStates[job?.id] || false}
+                setOpen={(isOpen) => handleSetOpen(job.id, isOpen)}
                 job={job}
-                isBookmarked={isBookmarked(job?._id)}
+                isBookmarked={isBookmarked(job?.id)}
               />
             </div>
           ))}
@@ -67,10 +67,10 @@ const RecentJobPostings = ({ recentJobs }) => {
 RecentJobPostings.propTypes = {
   recentJobs: PropTypes.arrayOf(
     PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       title: PropTypes.string.isRequired,
       company: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
+        id: PropTypes.string.isRequired,
         name: PropTypes.string.isRequired,
         logo: PropTypes.string,
       }).isRequired,

@@ -124,9 +124,9 @@ const JobOpenings = () => {
 
   const onSubmit = useCallback(
     (jobData) => {
-      editJob({ id: editingJob._id, jobData });
+      editJob({ id: editingJob.id, jobData });
     },
-    [editingJob?._id, editJob]
+    [editingJob?.id, editJob]
   );
 
   const onCancel = useCallback(() => {
@@ -146,7 +146,7 @@ const JobOpenings = () => {
   const isBookmarked = (jobId) => {
     return (
       user?.bookmarkedJobs?.some(
-        (bookmarkedJob) => bookmarkedJob?._id === jobId
+        (bookmarkedJob) => bookmarkedJob?.id === jobId
       ) || false
     );
   };
@@ -187,10 +187,10 @@ const JobOpenings = () => {
             data?.pages?.map((page, i) => (
               <Fragment key={i}>
                 {page?.jobs?.map((job) => (
-                  <div key={job._id}>
+                  <div key={job.id}>
                     <JobCard
-                      isBookmarked={isBookmarked(job._id)}
-                      key={job._id}
+                      isBookmarked={isBookmarked(job.id)}
+                      key={job.id}
                       job={job}
                     >
                       <div className="grid w-fit grid-cols-2 gap-1">
@@ -203,7 +203,7 @@ const JobOpenings = () => {
                               ? "destructive"
                               : "outline"
                           }
-                          onClick={() => handleSetOpen(job._id, true)}
+                          onClick={() => handleSetOpen(job.id, true)}
                           disabled={job?.applicants?.length === 0}
                         >
                           <Users size={20} />
@@ -220,10 +220,10 @@ const JobOpenings = () => {
                       </div>
                     </JobCard>
                     <ApplicantsDrawer
-                      open={openStates[job?._id] || false}
-                      setOpen={(isOpen) => handleSetOpen(job?._id, isOpen)}
+                      open={openStates[job?.id] || false}
+                      setOpen={(isOpen) => handleSetOpen(job?.id, isOpen)}
                       job={job}
-                      isBookmarked={isBookmarked(job._id)}
+                      isBookmarked={isBookmarked(job.id)}
                     />
                   </div>
                 ))}

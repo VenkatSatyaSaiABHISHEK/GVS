@@ -11,7 +11,7 @@ export const generateInviteCode = async ({ email, role }) => {
 };
 
 export const verifyInviteCode = async (inviteCode) => {
-  const { data } = await axiosInstance.post(`${BASE_URL}/invitecode/verify`, {
+  const { data } = await axiosInstance.post(`${BASE_URL}/verify`, {
     inviteCode,
   });
   return data;

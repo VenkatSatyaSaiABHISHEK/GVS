@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Users, Star, ChevronRight, Building2, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { formatLocation } from '@/utils/formatLocation';
 
 const FeaturedSchools = ({ schools }) => {
   const navigate = useNavigate();
@@ -129,7 +130,7 @@ const FeaturedSchools = ({ schools }) => {
               <div className="flex items-center justify-between text-xs text-gray-600">
                 <div className="flex items-center space-x-1">
                   <MapPin className="w-3 h-3" />
-                  <span>{school.location}</span>
+                  <span>{formatLocation(school.location)}</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Star className="w-3 h-3 text-yellow-500 fill-current" />

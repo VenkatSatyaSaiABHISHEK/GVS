@@ -3,8 +3,7 @@ import { User, Clock, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getMyTuitionRequests } from "@/services/tuitionServices";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 const TuitionRequests = () => {
   const navigate = useNavigate();
@@ -49,32 +48,20 @@ const TuitionRequests = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#F5F6FA] font-inter">
-        <div className="flex">
-          <ParentSidebar />
-          <div className="ml-[260px] flex-1">
-            <ParentTopbar title="Tuition Requests" searchPlaceholder="Search requests..." />
-            <div className="p-6 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-red-600 mb-2">Error loading requests</p>
-                <p className="text-gray-600">{error?.message || "Please try again later"}</p>
-              </div>
-            </div>
+      <ParentLayout>
+        <div className="p-6 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Error loading requests</p>
+            <p className="text-gray-600">{error?.message || "Please try again later"}</p>
           </div>
         </div>
-      </div>
+      </ParentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        <ParentSidebar />
-
-        <div className="ml-[260px] flex-1">
-          <ParentTopbar title="Tuition Requests" searchPlaceholder="Search requests..." />
-
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-[#111827] mb-2">
                 Your Requests ({isLoading ? "..." : requests.length})
@@ -179,9 +166,7 @@ const TuitionRequests = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

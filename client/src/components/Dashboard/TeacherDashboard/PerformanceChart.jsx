@@ -3,8 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const PerformanceChart = ({ data }) => {
-  // Mock data if none provided
-  const chartData = data || [
+  const defaultChartData = [
     { month: 'Jan', applications: 12, interviews: 8, hired: 3 },
     { month: 'Feb', applications: 15, interviews: 10, hired: 4 },
     { month: 'Mar', applications: 18, interviews: 12, hired: 5 },
@@ -12,6 +11,34 @@ const PerformanceChart = ({ data }) => {
     { month: 'May', applications: 25, interviews: 18, hired: 8 },
     { month: 'Jun', applications: 28, interviews: 20, hired: 9 },
   ];
+
+  const normalizeChartData = (input) => {
+    if (Array.isArray(input)) return input;
+
+    if (input && typeof input === 'object') {
+      if (Array.isArray(input.chartData)) {
+        return input.chartData;
+      }
+
+      if (Array.isArray(input.labels) && Array.isArray(input.values)) {
+        return input.labels.map((label, index) => ({
+          month: label,
+          applications: Number(input.values[index] ?? 0),
+          interviews: 0,
+          hired: 0,
+        }));
+      }
+    }
+
+    return defaultChartData;
+  };
+
+  const chartData = normalizeChartData(data).map((item, index) => ({
+    month: item?.month || item?.week || `P${index + 1}`,
+    applications: Number(item?.applications ?? 0),
+    interviews: Number(item?.interviews ?? 0),
+    hired: Number(item?.hired ?? item?.classes ?? 0),
+  }));
 
   const currentMonth = chartData[chartData.length - 1];
   const previousMonth = chartData[chartData.length - 2];

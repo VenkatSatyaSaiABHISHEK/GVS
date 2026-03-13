@@ -271,6 +271,9 @@ router.put("/:jobId/update", jobControllers.updateJob);
  */
 router.delete("/:jobId/delete", jobControllers.deleteJob);
 
+// Update job status (admin use)
+router.patch("/:jobId/status", jobControllers.updateJobStatus);
+
 /**
  * @swagger
  * /api/jobs/recruiter/jobs:

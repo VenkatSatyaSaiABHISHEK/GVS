@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TeacherLayout from './TeacherDashboard/TeacherLayout';
 import axiosInstance from '@/lib/axiosInstance';
+import { getTeacherRequests, updateRequestStatus } from '@/services/tuitionServices';
+import { toast } from 'sonner';
 import {
   Users,
   Clock,
@@ -20,6 +23,7 @@ import {
 } from 'lucide-react';
 
 const TeacherMyClasses = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalStudents: 0,
@@ -38,19 +42,61 @@ const TeacherMyClasses = () => {
   const fetchClassesData = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API calls
-      // For now, showing empty states
+      const [requestsRes, jobsRes] = await Promise.all([
+        getTeacherRequests().catch(() => ({ requests: [] })),
+        axiosInstance.get('/applications/teacher/recommended-jobs').catch(() => ({ data: { jobs: [] } })),
+      ]);
+
+      const requests = requestsRes?.requests || [];
+
+      const pending = requests.filter((item) => item.status === 'requested');
+      const accepted = requests.filter((item) => item.status === 'accepted');
+
+      setBookedStudents(
+        accepted.map((item) => ({
+          id: item.id,
+          studentName: item.parent?.fullName || 'Student',
+          parentName: item.parent?.fullName || 'Parent',
+          parentId: item.parent?.id,
+          subject: item.subject || 'Subject',
+          classType: item.mode || 'Hybrid',
+          schedule: item.startDate ? new Date(item.startDate).toLocaleString() : 'To be scheduled',
+          status: 'Upcoming',
+        }))
+      );
+
+      setTuitionRequests(
+        pending.map((item) => ({
+          id: item.id,
+          parentName: item.parent?.fullName || 'Parent',
+          parentId: item.parent?.id,
+          studentName: item.parent?.fullName || 'Student',
+          subject: item.subject || 'Subject',
+          classMode: item.mode || 'Hybrid',
+          location: item.location || '-',
+          budget: item.hourlyRate ? `₹${item.hourlyRate}/hr` : 'Negotiable',
+        }))
+      );
+
+      setHiringOpportunities((jobsRes.data?.jobs || []).slice(0, 6).map((job) => ({
+        id: job.id,
+        collegeName: job.companyName || 'School',
+        location: typeof job.location === 'string' ? job.location : (job.location?.city || 'N/A'),
+        role: job.title || 'Teacher',
+        department: job.subject || 'General',
+        salary: job.salaryRange || 'Negotiable',
+        experience: job.experience || 'N/A',
+      })));
+
       setStats({
-        totalStudents: 0,
-        pendingRequests: 0,
-        upcomingClasses: 0,
-        hiringOpportunities: 0,
+        totalStudents: accepted.length,
+        pendingRequests: pending.length,
+        upcomingClasses: accepted.length,
+        hiringOpportunities: (jobsRes.data?.jobs || []).length,
       });
-      setBookedStudents([]);
-      setTuitionRequests([]);
-      setHiringOpportunities([]);
     } catch (error) {
       console.error('Error fetching classes data:', error);
+      toast.error('Failed to load class data');
     } finally {
       setLoading(false);
     }
@@ -58,13 +104,12 @@ const TeacherMyClasses = () => {
 
   const handleAcceptRequest = async (requestId) => {
     try {
-      // TODO: Implement accept request API
-      console.log('Accept request:', requestId);
-      alert('Request accepted successfully!');
-      fetchClassesData();
+      await updateRequestStatus(requestId, 'accepted');
+      toast.success('Request accepted successfully');
+      await fetchClassesData();
     } catch (error) {
       console.error('Error accepting request:', error);
-      alert('Failed to accept request');
+      toast.error('Failed to accept request');
     }
   };
 
@@ -73,24 +118,25 @@ const TeacherMyClasses = () => {
       return;
     }
     try {
-      // TODO: Implement reject request API
-      console.log('Reject request:', requestId);
-      alert('Request rejected');
-      fetchClassesData();
+      await updateRequestStatus(requestId, 'rejected');
+      toast.success('Request rejected');
+      await fetchClassesData();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert('Failed to reject request');
+      toast.error('Failed to reject request');
     }
   };
 
   const handleMessageParent = (parentId) => {
-    // TODO: Navigate to messages with parent conversation
-    console.log('Message parent:', parentId);
+    if (!parentId) return;
+    navigate(`/dashboard/teacher/messages?userId=${parentId}`);
   };
 
   const handleStartClass = (classId) => {
-    // TODO: Implement start class functionality
-    console.log('Start class:', classId);
+    const cls = bookedStudents.find((item) => item.id === classId);
+    if (!cls?.parentId) return;
+    navigate(`/dashboard/teacher/messages?userId=${cls.parentId}`);
+    toast.info('Opened parent chat to start class');
   };
 
   const handleViewDetails = (id, type) => {
@@ -99,8 +145,7 @@ const TeacherMyClasses = () => {
   };
 
   const handleApplyJob = (jobId) => {
-    // TODO: Navigate to job application
-    console.log('Apply for job:', jobId);
+    navigate(`/dashboard/teacher/jobs/${jobId}`);
   };
 
   if (loading) {

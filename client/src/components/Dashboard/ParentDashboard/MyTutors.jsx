@@ -2,8 +2,7 @@ import React from "react";
 import { User, Users, Star, Video } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getMyTuitionRequests } from "@/services/tuitionServices";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 const MyTutors = () => {
   // Fetch accepted tuition requests (these are our active tutors)
@@ -15,14 +14,8 @@ const MyTutors = () => {
   const myTutors = requestsResponse?.data?.filter(request => request.status === "Accepted") || [];
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        <ParentSidebar />
-
-        <div className="ml-[260px] flex-1">
-          <ParentTopbar title="My Tutors" searchPlaceholder="Search tutors..." />
-
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-[#111827] mb-2">
                 Active Tutors ({isLoading ? "..." : myTutors.length})
@@ -118,9 +111,7 @@ const MyTutors = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

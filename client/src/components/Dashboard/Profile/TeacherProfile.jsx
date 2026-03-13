@@ -201,7 +201,7 @@ const TeacherProfile = () => {
       const formData = new FormData();
       formData.append('profilePic', file);
 
-      const response = await axiosInstance.put('/api/user/profile-pic', formData, {
+      const response = await axiosInstance.put('/user/profile-pic', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -304,7 +304,7 @@ const TeacherProfile = () => {
       console.log('Sending update data:', updateData);
 
       // Call API to update profile
-      const response = await axiosInstance.put('/api/user/profile-update', updateData);
+      const response = await axiosInstance.put('/user/profile-update', updateData);
 
       console.log('API response:', response.data);
 

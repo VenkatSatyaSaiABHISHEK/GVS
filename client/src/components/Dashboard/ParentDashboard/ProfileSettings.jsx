@@ -3,8 +3,7 @@ import { User, Camera, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import axiosInstance from "@/lib/axiosInstance";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -161,14 +160,8 @@ const ProfileSettings = () => {
   const availableSubjects = ["Physics", "Mathematics", "Chemistry", "Biology", "English", "Computer Science", "History", "Geography"];
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        <ParentSidebar />
-
-        <div className="ml-[260px] flex-1">
-          <ParentTopbar title="Profile Settings" />
-
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             <div className="max-w-4xl mx-auto">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-[#111827] mb-2">Personal Information</h2>
@@ -336,9 +329,7 @@ const ProfileSettings = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

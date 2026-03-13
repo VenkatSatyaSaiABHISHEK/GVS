@@ -31,8 +31,8 @@ const TeacherJobsPanel = () => {
     const [showFreelance, setShowFreelance] = useState(true);
 
     const { data: jobsData, isLoading, isError, error } = useQuery({
-        queryKey: ["teacher-jobs", filters],
-        queryFn: () => getJobsForTeacher(filters),
+        queryKey: ["teacher-jobs", filters, searchQuery],
+        queryFn: () => getJobsForTeacher({ ...filters, subject: searchQuery || undefined }),
         retry: false
     });
 
@@ -40,15 +40,15 @@ const TeacherJobsPanel = () => {
     const totalJobs = jobs.length;
 
     const skillSuggestions = [
-        "Your Skill",
-        "Programmer",
-        "Software Engineer",
-        "Photographer",
-        "Digital Marketing"
+        "Mathematics",
+        "Physics",
+        "Chemistry",
+        "English",
+        "Computer Science"
     ];
 
     const handleSearch = () => {
-        // Trigger refetch or filter logic
+        // searchQuery is already included in the queryKey, so React Query auto-refetches
     };
 
     return (
@@ -117,6 +117,7 @@ const TeacherJobsPanel = () => {
                         {skillSuggestions.map((skill, index) => (
                             <button
                                 key={index}
+                                onClick={() => setSearchQuery(skill)}
                                 className="px-4 py-2 bg-[#6C5DD3] bg-opacity-10 text-[#6C5DD3] rounded-full text-sm font-medium hover:bg-opacity-20 transition-all"
                             >
                                 {skill}
@@ -213,8 +214,8 @@ const TeacherJobsPanel = () => {
                     <div className={`grid ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-6`}>
                         {jobs.map((job) => (
                             <div
-                                key={job._id}
-                                onClick={() => navigate(`/dashboard/teacher/jobs/${job._id}`)}
+                                key={job.id}
+                                onClick={() => navigate(`/dashboard/teacher/jobs/${job.id}`)}
                                 className="bg-white rounded-3xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group"
                             >
                                 {/* Company Logo and Name */}

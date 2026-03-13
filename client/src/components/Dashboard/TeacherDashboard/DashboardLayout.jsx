@@ -23,11 +23,11 @@ const DashboardLayout = ({ children }) => {
 
   const menuItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard/teacher' },
-    { icon: Search, label: 'Search Job', path: '/dashboard/teacher/search' },
-    { icon: FileText, label: 'Applications', path: '/dashboard/teacher/applications' },
+    { icon: Search, label: 'Search Job', path: '/dashboard/teacher/jobs' },
+    { icon: FileText, label: 'Applications', path: '/dashboard/teacher/applied-jobs' },
     { icon: MessageSquare, label: 'Message', path: '/dashboard/teacher/messages' },
-    { icon: BarChart3, label: 'Statistics', path: '/dashboard/teacher/statistics' },
-    { icon: Newspaper, label: 'News', path: '/dashboard/teacher/news' },
+    { icon: BarChart3, label: 'Analytics', path: '/dashboard/teacher/analytics' },
+    { icon: Newspaper, label: 'My Classes', path: '/dashboard/teacher/my-classes' },
   ];
 
   const isActive = (path) => location.pathname === path;

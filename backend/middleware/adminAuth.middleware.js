@@ -1,57 +1,51 @@
 import jwt from "jsonwebtoken";
-import Admin from "../models/Admin.js";
-import { ApiError } from "../utils/error.js";
+import prisma from "../db/db.js";
+import { createError } from "../utils/error.js";
 
-export const adminAuth = async (req, res, next) => {
-  try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+export const protectAdmin = async (req, res, next) => {
+  let token;
 
-    if (!token) {
-      return next(new ApiError(401, "Access denied. No token provided."));
-    }
+  if (req.cookies.adminToken) {
+    token = req.cookies.adminToken;
+  } else if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET);
-    
-    // Check if the token is for admin
-    if (decoded.userType !== "admin") {
-      return next(new ApiError(403, "Access denied. Admin privileges required."));
-    }
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const admin = await Admin.findById(decoded.id).select("-password");
-    if (!admin) {
-      return next(new ApiError(401, "Invalid token. Admin not found."));
-    }
+      const admin = await prisma.admin.findUnique({
+        where: { id: decoded.id },
+      });
 
-    if (!admin.isActive) {
-      return next(new ApiError(403, "Admin account is deactivated."));
-    }
+      if (!admin) {
+        return next(createError(401, "Admin not found"));
+      }
 
-    req.user = admin;
-    next();
-  } catch (error) {
-    if (error.name === "JsonWebTokenError") {
-      return next(new ApiError(401, "Invalid token."));
+      // Remove password from admin object
+      const { password, ...adminWithoutPassword } = admin;
+      req.admin = adminWithoutPassword;
+      next();
+    } catch (error) {
+      console.error("Admin token verification error:", error.message);
+      return next(createError(401, "Not authorized, token failed"));
     }
-    if (error.name === "TokenExpiredError") {
-      return next(new ApiError(401, "Token expired."));
-    }
-    next(error);
+  } else {
+    return next(createError(401, "Not authorized, no token"));
   }
 };
 
-// Check specific permissions
-export const checkPermission = (permission) => {
-  return (req, res, next) => {
-    const admin = req.user;
-    
-    if (admin.role === "super_admin") {
-      return next(); // Super admin has all permissions
-    }
-
-    if (!admin.permissions[permission]) {
-      return next(new ApiError(403, `Access denied. ${permission} permission required.`));
-    }
-
+export const requireSuperAdmin = (req, res, next) => {
+  if (req.admin && req.admin.role === "super_admin") {
     next();
-  };
+  } else {
+    return next(createError(403, "Access denied. Super admin only."));
+  }
 };
+
+// Alias for backward compatibility with routes
+export const adminAuth = protectAdmin;

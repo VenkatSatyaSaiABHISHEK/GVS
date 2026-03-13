@@ -8,10 +8,10 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { label: 'Jobs', href: '/jobs' },
-    { label: 'Teachers', href: '/teachers' },
-    { label: 'Institutions', href: '/schools' },
-    { label: 'Courses', href: '/courses' }
+    { label: 'Jobs', href: '/login' },
+    { label: 'Teachers', href: '/login' },
+    { label: 'Institutions', href: '/register?type=school' },
+    { label: 'Courses', href: '/register' }
   ];
 
   return (

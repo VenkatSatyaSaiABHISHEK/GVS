@@ -18,7 +18,7 @@ const HeroSection = () => {
     if (searchData.experience) params.append('experience', searchData.experience);
     if (searchData.location) params.append('location', searchData.location);
     
-    navigate(`/search?${params.toString()}`);
+    navigate(`/login?redirect=/dashboard/teacher/jobs&${params.toString()}`);
   };
 
   return (

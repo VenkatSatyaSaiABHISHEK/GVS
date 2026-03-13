@@ -34,7 +34,7 @@ const AdminSchools = () => {
 
   const fetchSchools = async () => {
     try {
-      const response = await axiosInstance.get('/api/admin/users?role=school');
+      const response = await axiosInstance.get('/admin/users?role=recruiter');
       if (response.data.success) {
         setSchools(response.data.data.users || []);
       }
@@ -48,7 +48,7 @@ const AdminSchools = () => {
 
   const handleApproveSchool = async (schoolId) => {
     try {
-      await axiosInstance.patch(`/api/admin/users/${schoolId}/status`, {
+      await axiosInstance.patch(`/admin/users/${schoolId}/status`, {
         isVerified: true,
         status: 'approved'
       });
@@ -61,7 +61,7 @@ const AdminSchools = () => {
 
   const handleRejectSchool = async (schoolId) => {
     try {
-      await axiosInstance.patch(`/api/admin/users/${schoolId}/status`, {
+      await axiosInstance.patch(`/admin/users/${schoolId}/status`, {
         status: 'rejected'
       });
       toast.success('School rejected');
@@ -271,7 +271,7 @@ const AdminSchools = () => {
                     <Button 
                       size="sm" 
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => handleApproveSchool(school._id)}
+                      onClick={() => handleApproveSchool(school.id)}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Approve
@@ -282,7 +282,7 @@ const AdminSchools = () => {
                       variant="outline" 
                       size="sm"
                       className="text-red-600 border-red-200 hover:bg-red-50"
-                      onClick={() => handleRejectSchool(school._id)}
+                      onClick={() => handleRejectSchool(school.id)}
                     >
                       <XCircle className="w-4 h-4 mr-1" />
                       Reject

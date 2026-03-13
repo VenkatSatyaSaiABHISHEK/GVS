@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getTutors } from "@/services/tuitionServices";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import ParentLayout from "./ParentLayout";
 
 const RecommendedTeachers = () => {
   const [viewMode, setViewMode] = useState("grid");
@@ -33,14 +32,8 @@ const RecommendedTeachers = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        <ParentSidebar />
-
-        <div className="ml-[260px] flex-1">
-          <ParentTopbar title="Recommended Teachers" searchPlaceholder="Search recommended teachers..." />
-
-          <div className="p-6">
+    <ParentLayout>
+      <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-[#111827] mb-2">
@@ -177,9 +170,7 @@ const RecommendedTeachers = () => {
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

@@ -1,11 +1,15 @@
 import React from "react";
-import { User, Star, MapPin, Heart, Trash2, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { User, Star, MapPin, Heart, Trash2, Loader2, Bookmark } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { getTutors } from "@/services/tuitionServices";
-import ParentSidebar from "./ParentSidebar";
-import ParentTopbar from "./ParentTopbar";
+import { sendMessage } from "@/services/messageServices";
+import { toast } from "sonner";
+import ParentLayout from "./ParentLayout";
 
 const SavedTeachers = () => {
+  const navigate = useNavigate();
   // For now, we'll fetch recommended teachers as "saved" teachers
   // In a real app, you'd have a separate API for saved/bookmarked teachers
   const { data: teachersResponse, isLoading, isError } = useQuery({
@@ -13,7 +17,31 @@ const SavedTeachers = () => {
     queryFn: () => getTutors({ limit: 6 })
   });
 
-  const savedTeachers = teachersResponse?.data || [];
+  const savedTeachers = (teachersResponse?.tutors || teachersResponse?.data || []).map((teacher) => ({
+    id: teacher.id,
+    name: teacher.fullName || teacher.name || "Teacher",
+    subject: teacher.primarySubject || teacher.subject || "Subject N/A",
+    fee: teacher.hourlyRate ? `₹${teacher.hourlyRate}` : teacher.fee || "N/A",
+    description: teacher.bio || teacher.description || "Experienced teacher",
+    mode: teacher.teachingMode || teacher.mode || "Hybrid",
+    rating: teacher.rating || 0,
+    location: [teacher.city, teacher.state].filter(Boolean).join(", ") || teacher.location || "N/A",
+    studentsCount: teacher.studentsTaught || teacher.studentsCount || 0,
+    experience: teacher.yoe ? `${teacher.yoe} years` : teacher.experience || "N/A",
+    savedDate: teacher.savedDate || "recently",
+  }));
+
+  const contactMutation = useMutation({
+    mutationFn: (receiverId) => sendMessage({ receiverId, message: "Hi, I would like to discuss tuition classes." }),
+    onSuccess: (_, receiverId) => {
+      navigate(`/dashboard/parent/messages?userId=${receiverId}`);
+      toast.success("Conversation opened");
+    },
+    onError: (error, receiverId) => {
+      navigate(`/dashboard/parent/messages?userId=${receiverId}`);
+      toast.error(error?.response?.data?.message || "Opened messages. Send your first message there.");
+    },
+  });
 
   const getModeColor = (mode) => {
     switch(mode) {
@@ -24,133 +52,23 @@ const SavedTeachers = () => {
     }
   };
 
-          <div className="p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-[#111827] mb-2">
-                Saved Teachers ({isLoading ? "..." : savedTeachers.length})
-              </h2>
-              <p className="text-[#6B7280]">Teachers you've bookmarked for future reference</p>
-            </div>
-
-            {/* Loading State */}
-            {isLoading && (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-[#5B3DF5]" />
-                <span className="ml-2 text-[#6B7280]">Loading saved teachers...</span>
-              </div>
-            )}
-
-            {/* Error State */}
-            {isError && (
-              <div className="text-center py-12">
-                <p className="text-red-600 mb-2">Error loading saved teachers</p>
-                <p className="text-gray-600">Please try again later</p>
-              </div>
-            )}
-
-            {/* Teachers Grid */}
-            {!isLoading && !isError && savedTeachers.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {savedTeachers.map((teacher) => (
-                  <div key={teacher.id} className="bg-white rounded-2xl p-6 shadow-[0px_8px_24px_rgba(0,0,0,0.06)] hover:shadow-lg transition-all">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        {teacher.profileImage ? (
-                          <img 
-                            src={teacher.profileImage} 
-                            alt={teacher.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#5B3DF5] to-[#7A5CFF] rounded-full flex items-center justify-center">
-                            <User className="h-6 w-6 text-white" />
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="font-semibold text-[#111827]">{teacher.name}</h3>
-                          <p className="text-sm text-[#6B7280]">{teacher.subject}</p>
-                        </div>
-                      </div>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-2 mb-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#6B7280]">Experience:</span>
-                        <span className="font-medium">{teacher.experience}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#6B7280]">Rating:</span>
-                        <div className="flex items-center space-x-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="font-medium">{teacher.rating}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#6B7280]">Students:</span>
-                        <span className="font-medium">{teacher.studentsCount} students</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-[#6B7280]">Location:</span>
-                        <span className="font-medium">{teacher.location}</span>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-[#6B7280] mb-4 line-clamp-2">{teacher.description}</p>
-                    
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-lg font-bold text-[#5B3DF5]">{teacher.fee}</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getModeColor(teacher.mode)}`}>
-                        {teacher.mode}
-                      </span>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <button className="flex-1 bg-[#5B3DF5] text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-[#4B2BBF] transition-colors">
-                        View Profile
-                      </button>
-                      <button className="flex-1 border border-[#E5E7EB] text-[#6B7280] py-2 px-4 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
-                        Contact
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* No Saved Teachers */}
-            {!isLoading && !isError && savedTeachers.length === 0 && (
-              <div className="bg-white rounded-2xl p-12 shadow-[0px_8px_24px_rgba(0,0,0,0.06)] text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Heart className="h-8 w-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-[#111827] mb-2">No Saved Teachers</h3>
-                <p className="text-[#6B7280] mb-6">You haven't saved any teachers yet. Browse and save teachers you're interested in.</p>
-                <button 
-                  className="px-6 py-3 bg-[#5B3DF5] text-white rounded-lg hover:bg-[#4B2BBF] transition-colors"
-                  onClick={() => window.location.href = '/dashboard/parent/find-teachers'}
-                >
-                  Find Teachers
-                </button>
-              </div>
-            )}
-          </div>
-
   return (
-    <div className="min-h-screen bg-[#F5F6FA] font-inter">
-      <div className="flex">
-        {/* Sidebar */}
-        <ParentSidebar />
+    <ParentLayout>
+      <div className="p-6">
+            {isLoading && (
+              <div className="flex items-center justify-center py-10 text-[#6B7280]">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading saved teachers...
+              </div>
+            )}
 
-        {/* Main Content Area */}
-        <div className="ml-[260px] flex-1">
-          {/* Top Navbar */}
-          <ParentTopbar title="Saved Teachers" searchPlaceholder="Search saved teachers..." />
+            {isError && !isLoading && (
+              <div className="bg-white rounded-2xl p-6 text-red-600 shadow-[0px_8px_24px_rgba(0,0,0,0.06)]">
+                Failed to load saved teachers. Please refresh.
+              </div>
+            )}
 
-          {/* Page Content */}
-          <div className="p-6">
+            {!isLoading && !isError && (
+              <>
             {/* Page Header */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-[#111827] mb-2">
@@ -225,10 +143,16 @@ const SavedTeachers = () => {
                     
                     {/* Buttons */}
                     <div className="flex space-x-2">
-                      <button className="flex-1 bg-[#5B3DF5] text-white py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-[#4B2BBF] transition-colors">
+                      <button
+                        onClick={() => navigate(`/dashboard/parent/find-teachers?tutorId=${teacher.id}`)}
+                        className="flex-1 bg-[#5B3DF5] text-white py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-[#4B2BBF] transition-colors"
+                      >
                         View Profile
                       </button>
-                      <button className="flex-1 border border-[#E5E7EB] text-[#6B7280] py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-gray-50 transition-colors">
+                      <button
+                        onClick={() => contactMutation.mutate(teacher.id)}
+                        className="flex-1 border border-[#E5E7EB] text-[#6B7280] py-2 px-3 rounded-[20px] text-xs font-medium hover:bg-gray-50 transition-colors"
+                      >
                         Contact
                       </button>
                     </div>
@@ -248,10 +172,10 @@ const SavedTeachers = () => {
                 </Link>
               </div>
             )}
+            </>
+            )}
           </div>
-        </div>
-      </div>
-    </div>
+    </ParentLayout>
   );
 };
 

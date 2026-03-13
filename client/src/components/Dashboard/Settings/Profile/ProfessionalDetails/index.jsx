@@ -169,7 +169,7 @@ const ProfessionalDetails = () => {
           handleAction(
             itemToEdit ? "update" : "create",
             activeSection,
-            itemToEdit?._id,
+            itemToEdit?.id,
             item
           )
         }

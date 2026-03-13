@@ -258,7 +258,7 @@ const DemoClassesPanel = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {demoClasses.map((demo) => (
-                        <Card key={demo._id} className="hover:shadow-lg transition-shadow">
+                        <Card key={demo.id} className="hover:shadow-lg transition-shadow">
                             <CardContent className="p-6">
                                 <div className="flex flex-col md:flex-row gap-6">
                                     {/* Info */}
@@ -340,7 +340,7 @@ const DemoClassesPanel = () => {
                                         {demo.status === "proposed" && (
                                             <>
                                                 <Button
-                                                    onClick={() => handleStatusChange(demo._id, "scheduled")}
+                                                    onClick={() => handleStatusChange(demo.id, "scheduled")}
                                                     disabled={updateMutation.isPending}
                                                     className="gap-2"
                                                     size="sm"
@@ -350,7 +350,7 @@ const DemoClassesPanel = () => {
                                                 </Button>
                                                 <Button
                                                     variant="outline"
-                                                    onClick={() => handleStatusChange(demo._id, "cancelled")}
+                                                    onClick={() => handleStatusChange(demo.id, "cancelled")}
                                                     disabled={updateMutation.isPending}
                                                     className="gap-2 text-red-600"
                                                     size="sm"
@@ -363,7 +363,7 @@ const DemoClassesPanel = () => {
                                         {demo.status === "scheduled" && (
                                             <>
                                                 <Button
-                                                    onClick={() => handleStatusChange(demo._id, "completed")}
+                                                    onClick={() => handleStatusChange(demo.id, "completed")}
                                                     disabled={updateMutation.isPending}
                                                     className="gap-2"
                                                     size="sm"

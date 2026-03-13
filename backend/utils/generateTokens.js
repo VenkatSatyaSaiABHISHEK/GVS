@@ -2,14 +2,14 @@ import jwt from "jsonwebtoken";
 
 export const generateToken = (user, userType = "user") => {
   return jwt.sign(
-    { id: user._id, email: user.email, role: user.role, userType },
+    { id: user.id, email: user.email, role: user.role, userType },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: "30m" } // Short-lived access token
   );
 };
 
 export const generateRefreshToken = (user, userType = "user") => {
-  return jwt.sign({ id: user._id, userType }, process.env.JWT_REFRESH_SECRET, {
+  return jwt.sign({ id: user.id, userType }, process.env.JWT_REFRESH_SECRET, {
     expiresIn: "14d",
   });
 };

@@ -103,7 +103,7 @@ const Navbar = () => {
                           }),
                           "rounded-none gap-2"
                         )}
-                        to={"/dashboard/settings"}
+                        to={user?.role === "recruiter" ? "/dashboard/school/profile" : user?.role === "parent" ? "/dashboard/parent/profile-settings" : "/dashboard/teacher/profile"}
                       >
                         <LucideSettings size={20} /> Settings
                       </Link>

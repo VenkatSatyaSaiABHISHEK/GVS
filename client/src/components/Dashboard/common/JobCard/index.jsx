@@ -10,7 +10,7 @@ import moment from "moment";
 
 const JobCard = ({ job, isBookmarked, children }) => {
   const {
-    _id,
+    id,
     company,
     title,
     subject,
@@ -47,7 +47,7 @@ const JobCard = ({ job, isBookmarked, children }) => {
               title={isBookmarked ? "Unbookmark" : "Bookmark"}
               className="h-10 w-10 border-2 rounded-full border-white"
             >
-              <BookmarkButton isBookmarked={isBookmarked} jobId={_id} />
+              <BookmarkButton isBookmarked={isBookmarked} jobId={id} />
             </div>
           </div>
           <div className="mt-2 flex flex-row items-center justify-between">
@@ -96,9 +96,9 @@ JobCard.propTypes = {
   children: PropTypes.node,
   isBookmarked: PropTypes.bool.isRequired,
   job: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
+    id: PropTypes.string.isRequired,
     company: PropTypes.shape({
-      _id: PropTypes.string.isRequired,
+      id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
       logo: PropTypes.string.isRequired,
     }).isRequired,
@@ -116,7 +116,7 @@ JobCard.propTypes = {
       max: PropTypes.string.isRequired,
     }).isRequired,
     /* applicants: PropTypes.shape({
-      _id: PropTypes.string,
+      id: PropTypes.string,
       profilePic: PropTypes.string, // Added profilePic to PropTypes
       fullName: PropTypes.string,
       bio: PropTypes.string,

@@ -1,83 +1,80 @@
-import TuitionBooking from "../models/TuitionBooking.js";
-import { User } from "../models/User.js";
+import prisma from "../db/db.js";
 import { createError } from "../utils/error.js";
 
 export const tuitionControllers = {
-  // Get all available tutors for parents
   getAvailableTutors: async (req, res, next) => {
     try {
       const {
-        subject,
-        city,
-        state,
-        minRate,
-        maxRate,
-        mode,
-        qualification,
-        experience,
-        page = 1,
-        limit = 12,
+        subject, city, state, minRate, maxRate, mode,
+        qualification, experience, page = 1, limit = 12,
       } = req.query;
 
-      // Build filter query
-      const filter = {
-        role: "jobSeeker", // Teachers
+      const where = {
+        role: "jobSeeker",
         availableForHire: true,
       };
 
       if (subject) {
-        filter.$or = [
-          { primarySubject: { $regex: subject, $options: "i" } },
-          { secondarySubjects: { $in: [new RegExp(subject, "i")] } },
+        where.OR = [
+          { primarySubject: { contains: subject, mode: "insensitive" } },
+          { secondarySubjects: { has: subject } },
         ];
       }
+      if (city) where.city = { contains: city, mode: "insensitive" };
+      if (state) where.state = { contains: state, mode: "insensitive" };
+      if (mode) where.teachingMode = mode;
+      if (qualification) where.qualification = { contains: qualification, mode: "insensitive" };
 
-      if (city) {
-        filter.city = { $regex: city, $options: "i" };
-      }
+      const skip = (parseInt(page) - 1) * parseInt(limit);
 
-      if (state) {
-        filter.state = { $regex: state, $options: "i" };
-      }
+      const tutors = await prisma.user.findMany({
+        where,
+        select: {
+          id: true, fullName: true, profilePic: true, bio: true,
+          primarySubject: true, secondarySubjects: true, city: true,
+          state: true, qualification: true, yoe: true, hourlyRate: true,
+          rating: true, totalReviews: true, teachingMode: true,
+          languages: true, specializations: true, studentsTaught: true,
+          successRate: true,
+        },
+        take: parseInt(limit),
+        skip,
+        orderBy: [{ rating: "desc" }, { totalReviews: "desc" }],
+      });
 
-      if (mode) {
-        filter.teachingMode = mode;
-      }
+      const rankedTutors = tutors
+        .map((tutor) => {
+          const ratingScore = (tutor.rating || 0) * 20;
+          const exp = parseFloat(tutor.yoe || "0");
+          const expScore = Number.isFinite(exp) ? Math.min(exp * 4, 20) : 0;
+          const completionSignals = [
+            tutor.fullName,
+            tutor.bio,
+            tutor.profilePic,
+            tutor.primarySubject,
+            tutor.qualification,
+            tutor.hourlyRate,
+          ].filter(Boolean).length;
+          const completionScore = Math.round((completionSignals / 6) * 20);
+          const hireScore = Math.min((tutor.studentsTaught || 0) / 5, 20);
+          const rankScore = Math.round(ratingScore + expScore + completionScore + hireScore);
 
-      if (qualification) {
-        filter.qualification = { $regex: qualification, $options: "i" };
-      }
+          return {
+            ...tutor,
+            rankScore,
+          };
+        })
+        .sort((a, b) => b.rankScore - a.rankScore);
 
-      if (experience) {
-        filter.yoe = { $gte: experience };
-      }
-
-      // Rate filtering (convert string to number for comparison)
-      if (minRate || maxRate) {
-        filter.hourlyRate = {};
-        if (minRate) filter.hourlyRate.$gte = minRate;
-        if (maxRate) filter.hourlyRate.$lte = maxRate;
-      }
-
-      const skip = (page - 1) * limit;
-
-      const tutors = await User.find(filter)
-        .select(
-          "fullName profilePic bio primarySubject secondarySubjects city state qualification yoe hourlyRate rating totalReviews teachingMode languages specializations studentsTaught successRate"
-        )
-        .limit(parseInt(limit))
-        .skip(skip)
-        .sort({ rating: -1, totalReviews: -1 });
-
-      const total = await User.countDocuments(filter);
+      const total = await prisma.user.count({ where });
 
       res.status(200).json({
         success: true,
-        tutors,
+        tutors: rankedTutors,
         pagination: {
           total,
           page: parseInt(page),
-          pages: Math.ceil(total / limit),
+          pages: Math.ceil(total / parseInt(limit)),
         },
       });
     } catch (error) {
@@ -85,80 +82,91 @@ export const tuitionControllers = {
     }
   },
 
-  // Get tutor details
   getTutorDetails: async (req, res, next) => {
     try {
       const { tutorId } = req.params;
 
-      const tutor = await User.findById(tutorId)
-        .select("-password -verificationToken")
-        .populate("education")
-        .populate("experience");
-
-      if (!tutor) {
-        return next(createError(404, "Tutor not found"));
-      }
-
-      if (tutor.role !== "jobSeeker") {
-        return next(createError(400, "User is not a tutor"));
-      }
-
-      res.status(200).json({
-        success: true,
-        tutor,
+      const tutor = await prisma.user.findUnique({
+        where: { id: tutorId },
+        include: { education: true, experience: true },
       });
+
+      if (!tutor) return next(createError(404, "Tutor not found"));
+      if (tutor.role !== "jobSeeker") return next(createError(400, "User is not a tutor"));
+
+      const { password, verificationToken, ...tutorData } = tutor;
+      res.status(200).json({ success: true, tutor: tutorData });
     } catch (error) {
       next(error);
     }
   },
 
-  // Create tuition booking request (parent)
+  compareTeachers: async (req, res, next) => {
+    try {
+      const { teacherIds = [] } = req.body;
+      if (!Array.isArray(teacherIds) || teacherIds.length < 2 || teacherIds.length > 5) {
+        return next(createError(400, "Provide between 2 and 5 teacher IDs"));
+      }
+
+      const teachers = await prisma.user.findMany({
+        where: {
+          id: { in: teacherIds },
+          role: "jobSeeker",
+        },
+        select: {
+          id: true,
+          fullName: true,
+          profilePic: true,
+          primarySubject: true,
+          secondarySubjects: true,
+          qualification: true,
+          yoe: true,
+          rating: true,
+          hourlyRate: true,
+          city: true,
+          state: true,
+          studentsTaught: true,
+          successRate: true,
+        },
+      });
+
+      res.status(200).json({ success: true, teachers });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   createTuitionRequest: async (req, res, next) => {
     try {
       const parentId = req.user.id;
       const { teacherId, subject, classLevel, mode, location, message, hourlyRate } = req.body;
 
-      // Validate teacher exists and is available
-      const teacher = await User.findById(teacherId);
-      if (!teacher) {
-        return next(createError(404, "Teacher not found"));
-      }
+      const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
+      if (!teacher) return next(createError(404, "Teacher not found"));
+      if (teacher.role !== "jobSeeker") return next(createError(400, "User is not a teacher"));
+      if (!teacher.availableForHire) return next(createError(400, "Teacher is not available for hire"));
 
-      if (teacher.role !== "jobSeeker") {
-        return next(createError(400, "User is not a teacher"));
-      }
-
-      if (!teacher.availableForHire) {
-        return next(createError(400, "Teacher is not available for hire"));
-      }
-
-      // Check for duplicate pending request
-      const existingRequest = await TuitionBooking.findOne({
-        teacher: teacherId,
-        parent: parentId,
-        status: "requested",
+      const existingRequest = await prisma.tuitionBooking.findFirst({
+        where: { teacherId, parentId, status: "requested" },
       });
 
       if (existingRequest) {
-        return next(
-          createError(400, "You already have a pending request with this teacher")
-        );
+        return next(createError(400, "You already have a pending request with this teacher"));
       }
 
-      // Create booking
-      const booking = new TuitionBooking({
-        teacher: teacherId,
-        parent: parentId,
-        subject,
-        classLevel,
-        mode,
-        location,
-        message,
-        hourlyRate: hourlyRate || teacher.hourlyRate,
-        status: "requested",
+      const booking = await prisma.tuitionBooking.create({
+        data: {
+          teacherId,
+          parentId,
+          subject,
+          classLevel,
+          mode,
+          location: location || null,
+          message: message || null,
+          hourlyRate: hourlyRate ? parseFloat(hourlyRate) : (teacher.hourlyRate ? parseFloat(teacher.hourlyRate) : null),
+          status: "requested",
+        },
       });
-
-      await booking.save();
 
       res.status(201).json({
         success: true,
@@ -170,172 +178,156 @@ export const tuitionControllers = {
     }
   },
 
-  // Get parent's tuition requests
   getParentRequests: async (req, res, next) => {
     try {
       const parentId = req.user.id;
 
-      const requests = await TuitionBooking.find({ parent: parentId })
-        .populate(
-          "teacher",
-          "fullName profilePic primarySubject qualification city state hourlyRate rating"
-        )
-        .sort({ createdAt: -1 });
-
-      res.status(200).json({
-        success: true,
-        requests,
+      const requests = await prisma.tuitionBooking.findMany({
+        where: { parentId },
+        include: {
+          teacher: {
+            select: {
+              id: true, fullName: true, profilePic: true, primarySubject: true,
+              qualification: true, city: true, state: true, hourlyRate: true, rating: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
       });
+
+      res.status(200).json({ success: true, requests });
     } catch (error) {
       next(error);
     }
   },
 
-  // Get teacher's tuition requests
   getTeacherRequests: async (req, res, next) => {
     try {
       const teacherId = req.user.id;
 
-      const requests = await TuitionBooking.find({ teacher: teacherId })
-        .populate("parent", "fullName email contact city state")
-        .sort({ createdAt: -1 });
-
-      res.status(200).json({
-        success: true,
-        requests,
+      const requests = await prisma.tuitionBooking.findMany({
+        where: { teacherId },
+        include: {
+          parent: {
+            select: { id: true, fullName: true, email: true, contact: true, city: true, state: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
       });
+
+      res.status(200).json({ success: true, requests });
     } catch (error) {
       next(error);
     }
   },
 
-  // Update tuition request status (teacher)
   updateRequestStatus: async (req, res, next) => {
     try {
       const { requestId } = req.params;
       const { status, startDate } = req.body;
       const teacherId = req.user.id;
 
-      // Validate status
       const validStatuses = ["accepted", "rejected"];
-      if (!validStatuses.includes(status)) {
-        return next(createError(400, "Invalid status"));
+      if (!validStatuses.includes(status)) return next(createError(400, "Invalid status"));
+
+      const request = await prisma.tuitionBooking.findUnique({ where: { id: requestId } });
+      if (!request) return next(createError(404, "Request not found"));
+      if (request.teacherId !== teacherId) {
+        return next(createError(403, "You can only update your own tuition requests"));
       }
-
-      // Find request and verify it belongs to this teacher
-      const request = await TuitionBooking.findById(requestId);
-
-      if (!request) {
-        return next(createError(404, "Request not found"));
-      }
-
-      if (request.teacher.toString() !== teacherId) {
-        return next(
-          createError(403, "You can only update your own tuition requests")
-        );
-      }
-
       if (request.status !== "requested") {
         return next(createError(400, "Request has already been processed"));
       }
 
-      request.status = status;
+      const updateData = { status };
       if (status === "accepted" && startDate) {
-        request.startDate = startDate;
+        updateData.startDate = new Date(startDate);
       }
-      await request.save();
+
+      const updated = await prisma.tuitionBooking.update({
+        where: { id: requestId },
+        data: updateData,
+      });
 
       res.status(200).json({
         success: true,
         message: `Request ${status} successfully`,
-        request,
+        request: updated,
       });
     } catch (error) {
       next(error);
     }
   },
 
-  // Cancel tuition request (parent)
   cancelRequest: async (req, res, next) => {
     try {
       const { requestId } = req.params;
       const parentId = req.user.id;
 
-      const request = await TuitionBooking.findById(requestId);
-
-      if (!request) {
-        return next(createError(404, "Request not found"));
+      const request = await prisma.tuitionBooking.findUnique({ where: { id: requestId } });
+      if (!request) return next(createError(404, "Request not found"));
+      if (request.parentId !== parentId) {
+        return next(createError(403, "You can only cancel your own requests"));
       }
-
-      if (request.parent.toString() !== parentId) {
-        return next(
-          createError(403, "You can only cancel your own requests")
-        );
-      }
-
       if (request.status === "completed") {
         return next(createError(400, "Cannot cancel completed tuition"));
       }
 
-      request.status = "cancelled";
-      await request.save();
+      const updated = await prisma.tuitionBooking.update({
+        where: { id: requestId },
+        data: { status: "cancelled" },
+      });
 
       res.status(200).json({
         success: true,
         message: "Request cancelled successfully",
-        request,
+        request: updated,
       });
     } catch (error) {
       next(error);
     }
   },
 
-  // Get parent dashboard data
   getParentDashboard: async (req, res, next) => {
     try {
       const parentId = req.user.id;
 
-      // Get statistics
-      const totalRequests = await TuitionBooking.countDocuments({
-        parent: parentId,
-      });
-      const activeRequests = await TuitionBooking.countDocuments({
-        parent: parentId,
-        status: "requested",
-      });
-      const acceptedTuitions = await TuitionBooking.countDocuments({
-        parent: parentId,
-        status: "accepted",
+      const totalRequests = await prisma.tuitionBooking.count({ where: { parentId } });
+      const activeRequests = await prisma.tuitionBooking.count({ where: { parentId, status: "requested" } });
+      const acceptedTuitions = await prisma.tuitionBooking.count({ where: { parentId, status: "accepted" } });
+
+      const recentRequests = await prisma.tuitionBooking.findMany({
+        where: { parentId },
+        include: {
+          teacher: {
+            select: {
+              id: true, fullName: true, profilePic: true,
+              primarySubject: true, qualification: true, rating: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
       });
 
-      // Get recent requests
-      const recentRequests = await TuitionBooking.find({ parent: parentId })
-        .populate(
-          "teacher",
-          "fullName profilePic primarySubject qualification rating"
-        )
-        .sort({ createdAt: -1 })
-        .limit(5);
-
-      // Get recommended tutors (high rated, available)
-      const recommendedTutors = await User.find({
-        role: "jobSeeker",
-        availableForHire: true,
-        rating: { $gte: 4 },
-      })
-        .select(
-          "fullName profilePic primarySubject secondarySubjects city qualification hourlyRate rating totalReviews"
-        )
-        .sort({ rating: -1 })
-        .limit(6);
+      const recommendedTutors = await prisma.user.findMany({
+        where: {
+          role: "jobSeeker",
+          availableForHire: true,
+          rating: { gte: 4 },
+        },
+        select: {
+          id: true, fullName: true, profilePic: true, primarySubject: true,
+          secondarySubjects: true, city: true, qualification: true,
+          hourlyRate: true, rating: true, totalReviews: true,
+        },
+        orderBy: { rating: "desc" },
+        take: 6,
+      });
 
       res.status(200).json({
         success: true,
-        stats: {
-          totalRequests,
-          activeRequests,
-          acceptedTuitions,
-        },
+        stats: { totalRequests, activeRequests, acceptedTuitions },
         recentRequests,
         recommendedTutors,
       });

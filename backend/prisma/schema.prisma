@@ -1,0 +1,613 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ──────────────────────────────────────────
+
+enum UserRole {
+  admin
+  recruiter
+  jobSeeker
+  parent
+}
+
+enum AdminRole {
+  super_admin
+  moderator
+  support_admin
+}
+
+enum ApplicationStatus {
+  applied
+  application_viewed
+  shortlisted
+  interview_scheduled
+  interview_completed
+  selected
+  offer_sent
+  hired
+  rejected
+}
+
+enum InterviewType {
+  online
+  offline
+}
+
+enum OfferStatus {
+  none
+  pending
+  accepted
+  rejected
+}
+
+enum JobStatus {
+  open
+  closed
+}
+
+enum JobType {
+  full_time
+  part_time
+  contract
+  substitute
+}
+
+enum WorkFrom {
+  remote
+  on_site
+  hybrid
+}
+
+enum Frequency {
+  hourly
+  monthly
+  yearly
+}
+
+enum CompanySize {
+  s_1_10
+  s_11_50
+  s_51_200
+  s_201_500
+  s_501_1000
+  s_1000_plus
+}
+
+enum TeachingMode {
+  Online
+  Offline
+  Hybrid
+}
+
+enum TuitionStatus {
+  requested
+  accepted
+  rejected
+  completed
+  cancelled
+}
+
+enum TuitionMode {
+  online
+  offline
+  hybrid
+}
+
+enum MessageRelation {
+  job_application
+  tuition_booking
+  general
+}
+
+enum UserNotificationType {
+  job_alert
+  application_status
+  shortlisting
+  interview
+  offer
+  message
+  profile_view
+  tuition
+  booking
+  general
+}
+
+enum NotificationType {
+  announcement
+  feature_update
+  maintenance
+  promotion
+  warning
+}
+
+enum NotificationTarget {
+  all
+  teachers
+  schools
+  parents
+}
+
+enum NotificationPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum ReportType {
+  fake_profile
+  fraud_job
+  abusive_message
+  spam
+  inappropriate_content
+  other
+}
+
+enum ReportStatus {
+  pending
+  under_review
+  resolved
+  dismissed
+}
+
+enum ReportAction {
+  none
+  warning_sent
+  user_suspended
+  content_removed
+  account_banned
+}
+
+// ─── MODELS ─────────────────────────────────────────
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String?
+  role              UserRole  @default(jobSeeker)
+  isVerified        Boolean   @default(false)
+  inviteCodeId      String?
+  inviteCode        InviteCode? @relation(fields: [inviteCodeId], references: [id])
+  verificationToken String?
+
+  profileCompleted  Boolean   @default(false)
+  profilePic        String?
+  yoe               String?
+  fullName          String?
+  bio               String?
+  contact           String?
+  whatsappNumber    String?
+  contactEmail      String?
+  designation       String?
+  address           String?
+  aadhaarNumber     String?
+  skills            Json?     // [{name: String, level: Number}]
+  profileLinks      Json?     // {linkedIn, github, youtube, website, portfolio}
+
+  // Teacher-specific
+  primarySubject    String?
+  secondarySubjects String[]
+  city              String?
+  state             String?
+  qualification     String?
+  rating            Float     @default(0)
+  totalReviews      Int       @default(0)
+  hourlyRate        String?
+  availableForHire  Boolean   @default(true)
+  specializations   String[]
+  languages         String[]
+  teachingMode      TeachingMode? @default(Hybrid)
+  studentsTaught    Int       @default(0)
+  successRate       Float     @default(0)
+  classesCompleted  Int       @default(0)
+  achievements      String[]
+  isOnline          Boolean   @default(false)
+  lastSeenAt        DateTime?
+
+  // Parent-specific
+  childGrade        String?
+  childName         String?
+  preferredSubjects String[]
+  preferredTeachingMode TeachingMode?
+
+  // School/Institution-specific
+  institutionType   String?
+  boardAffiliation  String?
+  yearEstablished   String?
+  institutionSize   String?
+  hrContactPerson   String?
+  whatsapp          String?
+  facilities        String[]
+  subjectsHiring    String[]
+  requiredQualifications String?
+  minimumExperience String?
+  currentlyHiring   Boolean   @default(false)
+  schoolRegistrationNumber String?
+  principalName     String?
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  companies         CompanyRecruiter[]
+  projects          Project[]
+  experience        Experience[]
+  education         Education[]
+  bookmarkedJobs    UserBookmarkedJob[]
+
+  // Jobs posted (as recruiter)
+  postedJobs        Job[]     @relation("PostedBy")
+  companyJobs       Job[]     @relation("CompanyUser")
+
+  // Applications (as job seeker)
+  applications      Application[]
+
+  // Messages
+  sentMessages      Message[] @relation("Sender")
+  receivedMessages  Message[] @relation("Receiver")
+
+  // Tuition
+  tuitionAsTeacher  TuitionBooking[] @relation("Teacher")
+  tuitionAsParent   TuitionBooking[] @relation("Parent")
+
+  // Reports
+  reportsMade       Report[]  @relation("ReportedBy")
+  reportsReceived   Report[]  @relation("ReportedUser")
+
+  // Notification reads
+  notificationReads NotificationRead[]
+  notifications     UserNotification[] @relation("UserNotifications")
+  actedNotifications UserNotification[] @relation("NotificationActor")
+
+  @@map("users")
+}
+
+model Admin {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  password    String
+  role        AdminRole @default(moderator)
+  profilePic  String    @default("")
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  bio         String?
+  isActive    Boolean   @default(true)
+  lastLogin   DateTime?
+
+  // Permissions stored as JSON
+  permissions Json?     // {canManageUsers, canManageJobs, canManagePayments, canManageSettings, canViewAnalytics}
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  notifications  Notification[]
+  resolvedReports Report[]  @relation("ResolvedBy")
+
+  @@map("admins")
+}
+
+model Education {
+  id              String  @id @default(cuid())
+  institution     String?
+  degree          String?
+  yearOfGraduation String?
+
+  userId          String
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("educations")
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  jobTitle    String?
+  employer    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  description String?
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("experiences")
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  title       String?
+  skills      String[]
+  endDate     DateTime?
+  description String?
+  url         String?
+  repository  String?
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("projects")
+}
+
+model Company {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  logo        String?
+  website     String?
+  industry    String?
+  size        CompanySize?
+  location    Json?       // {city, state, country}
+  foundedYear Int?
+  socials     Json?       // {linkedin, twitter}
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  recruiters  CompanyRecruiter[]
+  jobs        CompanyJob[]
+
+  @@map("companies")
+}
+
+model CompanyRecruiter {
+  userId    String
+  companyId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, companyId])
+  @@map("company_recruiters")
+}
+
+model CompanyJob {
+  jobId     String
+  companyId String
+  job       Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([jobId, companyId])
+  @@map("company_jobs")
+}
+
+model UserBookmarkedJob {
+  userId String
+  jobId  String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job    Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([userId, jobId])
+  @@map("user_bookmarked_jobs")
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  role      UserRole
+  email     String
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+
+  users     User[]
+
+  @@map("invite_codes")
+}
+
+model Job {
+  id                  String    @id @default(cuid())
+  companyUserId       String?
+  companyUser         User?     @relation("CompanyUser", fields: [companyUserId], references: [id])
+  companyName         String?
+
+  postedById          String
+  postedBy            User      @relation("PostedBy", fields: [postedById], references: [id])
+
+  title               String
+  description         String
+  requirements        String[]
+  responsibilities    String[]
+  benefits            String[]
+  location            Json?     // {city, state, country}
+  salaryRange         Json?     // {min, max, currency}
+  tags                String[]
+  socials             Json?     // {linkedin, twitter, website}
+  frequency           Frequency @default(monthly)
+  subject             String?
+  skillsRequired      String?
+  postedAt            DateTime  @default(now())
+  status              JobStatus @default(open)
+  jobType             JobType   @default(full_time)
+  workFrom            WorkFrom  @default(on_site)
+  workingHours        String?
+  experience          String
+  applicationDeadline DateTime?
+  startDate           DateTime?
+  classLevels         String[]
+
+  // Relations
+  applicants          Application[]
+  bookmarkedBy        UserBookmarkedJob[]
+  companyJobs         CompanyJob[]
+  reports             Report[]  @relation("ReportedJob")
+
+  @@map("jobs")
+}
+
+model Application {
+  id            String           @id @default(cuid())
+  jobId         String
+  job           Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId   String
+  applicant     User             @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus @default(applied)
+  coverLetter   String?
+  expectedSalary Float?
+  availableFrom DateTime?
+  resume        String?
+  appliedAt     DateTime         @default(now())
+  viewedAt      DateTime?
+  shortlistedAt DateTime?
+
+  interviewDate DateTime?
+  interviewTime String?
+  interviewType InterviewType?
+  meetingLink   String?
+  interviewLocation String?
+  interviewInstructions String?
+  interviewCompletedAt DateTime?
+  interviewFeedback String?
+
+  demoClassDate DateTime?
+  demoEvaluation Json?
+
+  offerSalary   Float?
+  offerSubject  String?
+  joiningDate   DateTime?
+  offerTerms    String?
+  offerStatus   OfferStatus @default(none)
+  offerRespondedAt DateTime?
+
+  statusHistory Json?
+
+  @@unique([jobId, applicantId])
+  @@map("applications")
+}
+
+model Message {
+  id          String          @id @default(cuid())
+  senderId    String
+  sender      User            @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User            @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  message     String
+  isRead      Boolean         @default(false)
+  relatedTo   MessageRelation @default(general)
+  relatedId   String?
+  attachmentUrl String?
+  attachmentName String?
+  archivedBySender Boolean @default(false)
+  archivedByReceiver Boolean @default(false)
+  createdAt   DateTime        @default(now())
+
+  @@index([senderId, receiverId, createdAt(sort: Desc)])
+  @@index([receiverId, isRead])
+  @@map("messages")
+}
+
+model UserNotification {
+  id          String               @id @default(cuid())
+  recipientId String
+  recipient   User                 @relation("UserNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  actorId     String?
+  actor       User?                @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  title       String
+  message     String
+  type        UserNotificationType @default(general)
+  link        String?
+  metadata    Json?
+  isRead      Boolean              @default(false)
+  createdAt   DateTime             @default(now())
+
+  @@index([recipientId, isRead])
+  @@index([createdAt])
+  @@map("user_notifications")
+}
+
+model TuitionBooking {
+  id          String       @id @default(cuid())
+  teacherId   String
+  teacher     User         @relation("Teacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  parentId    String
+  parent      User         @relation("Parent", fields: [parentId], references: [id], onDelete: Cascade)
+  subject     String
+  classLevel  String
+  mode        TuitionMode
+  location    String?
+  message     String?
+  status      TuitionStatus @default(requested)
+  hourlyRate  Float?
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("tuition_bookings")
+}
+
+model Notification {
+  id             String              @id @default(cuid())
+  title          String
+  message        String
+  type           NotificationType
+  targetAudience NotificationTarget  @default(all)
+  priority       NotificationPriority @default(medium)
+  isActive       Boolean             @default(true)
+  scheduledFor   DateTime?
+  expiresAt      DateTime?
+  createdById    String
+  createdBy      Admin               @relation(fields: [createdById], references: [id])
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  readBy         NotificationRead[]
+
+  @@map("notifications")
+}
+
+model NotificationRead {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readAt         DateTime     @default(now())
+
+  @@unique([notificationId, userId])
+  @@map("notification_reads")
+}
+
+model PlatformSettings {
+  id              String  @id @default(cuid())
+  platformName    String  @default("Gravity Portal")
+  logo            String  @default("")
+  primaryColor    String  @default("#6C5CE7")
+  emailSettings   Json?   // {smtpHost, smtpPort, smtpUser, smtpPassword, fromEmail, fromName}
+  paymentSettings Json?   // {jobPostingFee, contactUnlockFee, subscriptionPlans}
+  maintenanceMode Json?   // {enabled, message}
+  features        Json?   // {allowRegistration, requireEmailVerification, allowJobPosting, allowMessaging}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  reportedById    String
+  reportedBy      User         @relation("ReportedBy", fields: [reportedById], references: [id])
+  reportedUserId  String?
+  reportedUser    User?        @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  reportedJobId   String?
+  reportedJob     Job?         @relation("ReportedJob", fields: [reportedJobId], references: [id])
+  reportedMessageId String?
+  type            ReportType
+  reason          String
+  description     String?
+  status          ReportStatus @default(pending)
+  adminNotes      String?
+  resolvedById    String?
+  resolvedBy      Admin?       @relation("ResolvedBy", fields: [resolvedById], references: [id])
+  resolvedAt      DateTime?
+  actionTaken     ReportAction?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("reports")
+}

@@ -28,7 +28,7 @@ const Bookmarks = () => {
         </h1>
         <div className="grid lg:grid-cols-3 gap-4">
           {user?.bookmarkedJobs?.map((job) => (
-            <Card key={job._id} className="rounded-3xl bg-cyan-300/30">
+            <Card key={job.id} className="rounded-3xl bg-cyan-300/30">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -36,7 +36,7 @@ const Bookmarks = () => {
                     <CardDescription>{job?.frequency}</CardDescription>
                   </div>
                   <div className="h-12 border rounded-full w-12">
-                    <BookmarkButton jobId={job?._id} isBookmarked />
+                    <BookmarkButton jobId={job?.id} isBookmarked />
                   </div>
                 </div>
               </CardHeader>

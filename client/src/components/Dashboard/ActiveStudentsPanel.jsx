@@ -122,7 +122,7 @@ const ActiveStudentsPanel = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-4">
                     {students.map((student) => (
-                        <Card key={student._id} className="hover:shadow-lg transition-shadow">
+                        <Card key={student.id} className="hover:shadow-lg transition-shadow">
                             <CardContent className="p-6">
                                 <div className="flex flex-col md:flex-row gap-6 items-start">
                                     {/* Student Avatar */}
@@ -242,7 +242,7 @@ const ActiveStudentsPanel = () => {
                                                     <Button
                                                         onClick={() => {
                                                             updateMutation.mutate({
-                                                                studentId: student._id,
+                                                                studentId: student.id,
                                                                 data: { teacherNotes: notes }
                                                             });
                                                         }}
@@ -259,7 +259,7 @@ const ActiveStudentsPanel = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 className="gap-2 text-yellow-600"
-                                                onClick={() => handleStatusChange(student._id, "paused")}
+                                                onClick={() => handleStatusChange(student.id, "paused")}
                                                 disabled={updateMutation.isPending}
                                             >
                                                 <Clock size={16} />
@@ -272,7 +272,7 @@ const ActiveStudentsPanel = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 className="gap-2 text-red-600"
-                                                onClick={() => handleStatusChange(student._id, "cancelled")}
+                                                onClick={() => handleStatusChange(student.id, "cancelled")}
                                                 disabled={updateMutation.isPending}
                                             >
                                                 <X size={16} />
@@ -285,7 +285,7 @@ const ActiveStudentsPanel = () => {
                                                 variant="outline"
                                                 size="sm"
                                                 className="gap-2 text-green-600"
-                                                onClick={() => handleStatusChange(student._id, "active")}
+                                                onClick={() => handleStatusChange(student.id, "active")}
                                                 disabled={updateMutation.isPending}
                                             >
                                                 <Check size={16} />

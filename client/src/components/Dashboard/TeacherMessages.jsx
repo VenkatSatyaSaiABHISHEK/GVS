@@ -1,245 +1,218 @@
-import React, { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import TeacherLayout from './TeacherDashboard/TeacherLayout';
 import {
-  Plus,
-  Star,
-  MoreVertical,
-  Smile,
-  Paperclip,
-  Send,
-  Users,
-  Undo,
-  Redo,
-  Bold,
-  Italic,
-  Underline,
-  MessageSquare,
-  Inbox,
-} from 'lucide-react';
+  getAllConversations,
+  getConversation,
+  sendMessageWithAttachment,
+  getInboxMessages,
+  getSentMessages,
+  getArchivedMessages,
+  archiveMessage,
+} from '@/services/messageServices';
+import { Plus, Paperclip, Send, Inbox, Archive, Mail } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 const TeacherMessages = () => {
-  const [activeTab, setActiveTab] = useState('all');
-  const [selectedConversation, setSelectedConversation] = useState(null);
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const preselectedUserId = searchParams.get('userId');
+  const [activeTab, setActiveTab] = useState('inbox');
+  const [selectedConversationUser, setSelectedConversationUser] = useState(null);
   const [messageInput, setMessageInput] = useState('');
+  const [attachment, setAttachment] = useState(null);
 
-  const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'unread', label: 'Unread' },
-    { id: 'important', label: 'Important' },
-  ];
+  const { data: conversationsData } = useQuery({
+    queryKey: ['teacher-conversations'],
+    queryFn: getAllConversations,
+    refetchInterval: 15000,
+  });
 
-  const teamConversations = [];
-  const recentMessages = [];
+  const conversations = conversationsData?.conversations || [];
+
+  useEffect(() => {
+    if (preselectedUserId && !selectedConversationUser) {
+      setSelectedConversationUser(preselectedUserId);
+    }
+  }, [preselectedUserId, selectedConversationUser]);
+
+  const { data: conversationData } = useQuery({
+    queryKey: ['teacher-conversation', selectedConversationUser],
+    queryFn: () => getConversation(selectedConversationUser),
+    enabled: Boolean(selectedConversationUser),
+    refetchInterval: 15000,
+  });
+
+  const { data: inboxData } = useQuery({
+    queryKey: ['teacher-inbox'],
+    queryFn: getInboxMessages,
+  });
+
+  const { data: sentData } = useQuery({
+    queryKey: ['teacher-sent'],
+    queryFn: getSentMessages,
+  });
+
+  const { data: archivedData } = useQuery({
+    queryKey: ['teacher-archived'],
+    queryFn: getArchivedMessages,
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: sendMessageWithAttachment,
+    onSuccess: () => {
+      setMessageInput('');
+      setAttachment(null);
+      queryClient.invalidateQueries(['teacher-conversations']);
+      queryClient.invalidateQueries(['teacher-conversation', selectedConversationUser]);
+      queryClient.invalidateQueries(['teacher-inbox']);
+      queryClient.invalidateQueries(['teacher-sent']);
+      toast.success('Message sent');
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.message || 'Failed to send message');
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: archiveMessage,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['teacher-inbox']);
+      queryClient.invalidateQueries(['teacher-sent']);
+      queryClient.invalidateQueries(['teacher-archived']);
+      toast.success('Message archived');
+    },
+  });
+
+  const folderMessages = useMemo(() => {
+    if (activeTab === 'inbox') return inboxData?.messages || [];
+    if (activeTab === 'sent') return sentData?.messages || [];
+    return archivedData?.messages || [];
+  }, [activeTab, inboxData, sentData, archivedData]);
+
+  const onSend = () => {
+    if (!selectedConversationUser) {
+      toast.error('Select a conversation first');
+      return;
+    }
+
+    if (!messageInput && !attachment) {
+      toast.error('Type a message or attach a file');
+      return;
+    }
+
+    sendMutation.mutate({
+      receiverId: selectedConversationUser,
+      message: messageInput,
+      attachment,
+      relatedTo: 'general',
+    });
+  };
 
   return (
     <TeacherLayout>
       <div className="p-6 bg-[#F7F8FC] min-h-screen">
-        {/* Main Messages Container */}
         <div className="bg-white rounded-3xl shadow-md overflow-hidden h-[calc(100vh-140px)]">
           <div className="flex h-full">
-            {/* Left Panel - Conversation List */}
-            <div className="w-80 border-r border-gray-200 flex flex-col">
-              {/* Tabs */}
+            <div className="w-96 border-r border-gray-200 flex flex-col">
               <div className="p-4 border-b border-gray-200">
-                <div className="flex gap-2 mb-4">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                        activeTab === tab.id
-                          ? 'bg-[#6C5DD3] text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <button onClick={() => setActiveTab('inbox')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'inbox' ? 'bg-[#6C5DD3] text-white' : 'bg-gray-100 text-gray-700'}`}>Inbox</button>
+                  <button onClick={() => setActiveTab('sent')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'sent' ? 'bg-[#6C5DD3] text-white' : 'bg-gray-100 text-gray-700'}`}>Sent</button>
+                  <button onClick={() => setActiveTab('archived')} className={`px-3 py-2 rounded-lg text-sm ${activeTab === 'archived' ? 'bg-[#6C5DD3] text-white' : 'bg-gray-100 text-gray-700'}`}>Archived</button>
                 </div>
-
-                {/* New Message Button */}
-                <button className="w-full bg-[#6C5DD3] text-white rounded-xl py-3 px-4 flex items-center justify-center gap-2 font-semibold hover:bg-[#5B4DC2] transition-all">
-                  <Plus className="w-5 h-5" />
-                  New Message
+                <button className="w-full bg-[#6C5DD3] text-white rounded-xl py-3 px-4 flex items-center justify-center gap-2 font-semibold">
+                  <Plus className="w-5 h-5" /> New Message
                 </button>
               </div>
 
-              {/* Conversations List */}
-              <div className="flex-1 overflow-y-auto">
-                {/* Team Conversations */}
-                <div className="p-4">
-                  <p className="text-xs font-bold text-gray-400 mb-3 tracking-wider">TEAM</p>
-                  {teamConversations.length > 0 ? (
-                    <div className="space-y-2">
-                      {teamConversations.map((conv) => (
-                        <div
-                          key={conv.id}
-                          onClick={() => setSelectedConversation(conv.id)}
-                          className={`p-3 rounded-xl cursor-pointer transition-all ${
-                            selectedConversation === conv.id
-                              ? 'bg-[#6C5DD3] bg-opacity-10 border border-[#6C5DD3]'
-                              : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#6C5DD3] to-[#8B7FE8] rounded-xl flex items-center justify-center text-white text-xl flex-shrink-0">
-                              {conv.avatar}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h4 className="font-semibold text-gray-800 text-sm truncate">{conv.name}</h4>
-                                <span className="text-xs text-gray-400 ml-2">{conv.time}</span>
-                              </div>
-                              <p className="text-xs text-gray-500 truncate">{conv.lastMessage}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                {conversations.map((conversation) => (
+                  <button
+                    key={conversation.user.id}
+                    onClick={() => setSelectedConversationUser(conversation.user.id)}
+                    className={`w-full p-3 rounded-xl text-left ${selectedConversationUser === conversation.user.id ? 'bg-[#6C5DD3] bg-opacity-10 border border-[#6C5DD3]' : 'hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold text-sm">{conversation.user.fullName || 'User'}</p>
+                      {conversation.unreadCount > 0 && <span className="text-xs bg-[#6C5DD3] text-white rounded-full px-2 py-0.5">{conversation.unreadCount}</span>}
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-400">
-                      <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-xs">No team conversations</p>
-                    </div>
-                  )}
-                </div>
+                    <p className="text-xs text-gray-500 truncate">{conversation.lastMessage?.message || 'No messages yet'}</p>
+                  </button>
+                ))}
 
-                {/* Recent Messages */}
-                <div className="p-4 border-t border-gray-100">
-                  <p className="text-xs font-bold text-gray-400 mb-3 tracking-wider">RECENT MESSAGE</p>
-                  {recentMessages.length > 0 ? (
-                    <div className="space-y-2">
-                      {recentMessages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          onClick={() => setSelectedConversation(msg.id)}
-                          className={`p-3 rounded-xl cursor-pointer transition-all ${
-                            selectedConversation === msg.id
-                              ? 'bg-[#6C5DD3] bg-opacity-10 border border-[#6C5DD3]'
-                              : 'hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="relative">
-                              <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                {msg.avatar}
-                              </div>
-                              {msg.online && (
-                                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <h4 className="font-semibold text-gray-800 text-sm truncate">{msg.name}</h4>
-                                {msg.unread > 0 && (
-                                  <span className="w-5 h-5 bg-[#6C5DD3] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                    {msg.unread}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-500 truncate">{msg.lastMessage}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-6 text-gray-400">
-                      <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p className="text-xs">No recent messages</p>
-                    </div>
-                  )}
-                </div>
+                {conversations.length === 0 && <p className="text-sm text-gray-500 text-center py-8">No conversations yet.</p>}
               </div>
             </div>
 
-            {/* Right Panel - Chat Conversation */}
             <div className="flex-1 flex flex-col">
-              {selectedConversation ? (
-                <>
-                  {/* Chat Header */}
-                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">Conversation</h3>
-                      <p className="text-sm text-gray-500">Select a conversation to view messages</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <Star className="w-5 h-5 text-gray-400" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                        <MoreVertical className="w-5 h-5 text-gray-400" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Messages Area */}
-                  <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
-                    <div className="text-center text-gray-400">
-                      <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-semibold mb-2">No messages yet</p>
-                      <p className="text-sm">Start a conversation to see messages here</p>
-                    </div>
-                  </div>
-
-                  {/* Message Input Area */}
-                  <div className="p-4 border-t border-gray-200">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Undo">
-                        <Undo className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Redo">
-                        <Redo className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Bold">
-                        <Bold className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Italic">
-                        <Italic className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Underline">
-                        <Underline className="w-4 h-4 text-gray-500" />
-                      </button>
-                      <div className="flex-1"></div>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Emoji">
-                        <Smile className="w-5 h-5 text-gray-500" />
-                      </button>
-                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Attach">
-                        <Paperclip className="w-5 h-5 text-gray-500" />
-                      </button>
-                    </div>
-
-                    {/* Input Field */}
-                    <div className="flex items-end gap-3">
-                      <textarea
-                        value={messageInput}
-                        onChange={(e) => setMessageInput(e.target.value)}
-                        placeholder="Type your message..."
-                        rows={2}
-                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#6C5DD3] focus:border-transparent transition-all"
-                      />
-                      <button className="bg-[#6C5DD3] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DC2] transition-all flex items-center gap-2">
-                        <Send className="w-5 h-5" />
-                        SEND
-                      </button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center text-gray-400">
-                    <Inbox className="w-20 h-20 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-xl font-semibold mb-2">No Conversation Selected</h3>
-                    <p className="text-sm mb-6">Choose a conversation from the list or start a new message</p>
-                    <button className="bg-[#6C5DD3] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DC2] transition-all inline-flex items-center gap-2">
-                      <Plus className="w-5 h-5" />
-                      New Message
-                    </button>
-                  </div>
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">{selectedConversationUser ? 'Chat' : 'Message Center'}</h3>
+                  <p className="text-sm text-gray-500">Inbox • Sent • Archived</p>
                 </div>
-              )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                {selectedConversationUser ? (
+                  (conversationData?.messages || []).map((message) => {
+                    const mine = message.senderId !== selectedConversationUser;
+                    return (
+                      <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[70%] rounded-xl p-3 ${mine ? 'bg-[#6C5DD3] text-white' : 'bg-gray-100 text-gray-800'}`}>
+                          {message.message && <p className="text-sm">{message.message}</p>}
+                          {message.attachmentUrl && (
+                            <a href={message.attachmentUrl} target="_blank" rel="noreferrer" className={`text-xs underline ${mine ? 'text-white' : 'text-blue-600'}`}>
+                              {message.attachmentName || 'Attachment'}
+                            </a>
+                          )}
+                          <p className={`text-[10px] mt-1 ${mine ? 'text-white/80' : 'text-gray-500'}`}>
+                            {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                          </p>
+                          <button
+                            onClick={() => archiveMutation.mutate(message.id)}
+                            className={`text-[10px] mt-1 inline-flex items-center gap-1 ${mine ? 'text-white/90' : 'text-gray-600'}`}
+                          >
+                            <Archive className="w-3 h-3" /> Archive
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-16 text-gray-400">
+                    <Inbox className="w-16 h-16 mx-auto mb-4" />
+                    <p>Select a conversation to start chatting</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-4 border-t border-gray-200">
+                <div className="text-xs text-gray-500 mb-2">
+                  {activeTab === 'inbox' && `Inbox messages: ${folderMessages.length}`}
+                  {activeTab === 'sent' && `Sent messages: ${folderMessages.length}`}
+                  {activeTab === 'archived' && `Archived messages: ${folderMessages.length}`}
+                </div>
+                <div className="flex items-end gap-3">
+                  <textarea
+                    value={messageInput}
+                    onChange={(event) => setMessageInput(event.target.value)}
+                    placeholder="Type your message..."
+                    rows={2}
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none"
+                  />
+                  <label className="p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                    <Paperclip className="w-5 h-5 text-gray-600" />
+                    <input type="file" className="hidden" onChange={(event) => setAttachment(event.target.files?.[0] || null)} />
+                  </label>
+                  <button onClick={onSend} className="bg-[#6C5DD3] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#5B4DC2] inline-flex items-center gap-2">
+                    <Send className="w-5 h-5" /> Send
+                  </button>
+                </div>
+                {attachment && <p className="text-xs text-gray-500 mt-2 inline-flex items-center gap-1"><Mail className="w-3 h-3" /> {attachment.name}</p>}
+              </div>
             </div>
           </div>
         </div>

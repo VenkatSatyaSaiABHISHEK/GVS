@@ -105,10 +105,10 @@ const TeacherDashboardNav = () => {
 
             {/* Settings */}
             <Link
-                to="/dashboard/settings"
+                to="/dashboard/teacher/profile"
                 className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
-                    location.pathname.startsWith("/dashboard/settings")
+                    location.pathname.startsWith("/dashboard/teacher/profile") || location.pathname.startsWith("/dashboard/teacher/settings")
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
