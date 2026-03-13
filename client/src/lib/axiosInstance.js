@@ -5,7 +5,7 @@ import axios from "axios";
 // This avoids cross-origin cookie issues between localhost:3000 ↔ localhost:8000.
 // In production, VITE_API_URL can be set and will be used directly.
 const API_URL = import.meta.env.VITE_API_URL;
-const BASE = import.meta.env.PROD ? `${API_URL}/api` : "/api";
+const BASE = import.meta.env.PROD ? (API_URL ? `${API_URL}/api` : "/api") : "/api";
 
 // Track refresh token attempts per request
 const MAX_REFRESH_ATTEMPTS = 3;

@@ -16,7 +16,17 @@ export const protectAdmin = async (req, res, next) => {
 
   if (token) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET;
+      if (!secret) {
+        return next(createError(500, "JWT secret is not configured"));
+      }
+
+      const decoded = jwt.verify(token, secret);
+
+      // Prevent non-admin tokens from accessing admin routes
+      if (decoded?.userType && decoded.userType !== "admin") {
+        return next(createError(403, "Access denied. Admin token required."));
+      }
 
       const admin = await prisma.admin.findUnique({
         where: { id: decoded.id },
