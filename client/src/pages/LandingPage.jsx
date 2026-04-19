@@ -1,16 +1,16 @@
 import React from 'react';
-import Navbar from '@/components/landing/Navbar';
-import HeroSection from '@/components/landing/HeroSection';
-import PromoBanner from '@/components/landing/PromoBanner';
-import CategoryCards from '@/components/landing/CategoryCards';
-import TopHiringInstitutions from '@/components/landing/TopHiringInstitutions';
-import FeaturedInstitutions from '@/components/landing/FeaturedInstitutions';
-import VideoSection from '@/components/landing/VideoSection';
-import CareerSection from '@/components/landing/CareerSection';
-import EventsSection from '@/components/landing/EventsSection';
-import PlatformStats from '@/components/landing/PlatformStats';
-import CallToAction from '@/components/landing/CallToAction';
-import Footer from '@/components/landing/Footer';
+import Navbar from '@/components/Landing/Navbar';
+import HeroSection from '@/components/Landing/HeroSection';
+import PromoBanner from '@/components/Landing/PromoBanner';
+import CategoryCards from '@/components/Landing/CategoryCards';
+import TopHiringInstitutions from '@/components/Landing/TopHiringInstitutions';
+import FeaturedInstitutions from '@/components/Landing/FeaturedInstitutions';
+import VideoSection from '@/components/Landing/VideoSection';
+import CareerSection from '@/components/Landing/CareerSection';
+import EventsSection from '@/components/Landing/EventsSection';
+import PlatformStats from '@/components/Landing/PlatformStats';
+import CallToAction from '@/components/Landing/CallToAction';
+import Footer from '@/components/Landing/Footer';
 
 const LandingPage = () => {
   return (
